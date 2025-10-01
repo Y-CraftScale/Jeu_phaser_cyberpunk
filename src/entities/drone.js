@@ -58,7 +58,8 @@ export default class Drone extends Phaser.Physics.Arcade.Sprite {
   const dy = player.y - this.y;
   const dist = Math.hypot(dx, dy) || 1;
   const nx = dx / dist, ny = dy / dist;      // direction -> joueur
-  const hasLOS = this.hasLineOfSight(player, collideLayer);
+  const hasLOS = this.hasLineOfSight(player, collideLayer) && this.hasLineOfSight(player, this.scene.mur2);
+
 
    this.setFlipX(dx < 0);
 

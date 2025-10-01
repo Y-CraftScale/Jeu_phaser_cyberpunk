@@ -1,5 +1,6 @@
 import Player from '../entities/Player.js';
 import Drone from '../entities/drone.js';
+import Elevator from '../entities/Elevator.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() { super('Game'); }
@@ -121,15 +122,60 @@ export default class GameScene extends Phaser.Scene {
     });
 
 
+// --- ASCENSEURS ---
+const layer = map.getObjectLayer('ascenseurs');
+const propsOf = o => Object.fromEntries((o.properties||[]).map(p=>[p.name,p.value]));
+const objs = (layer?.objects || []).filter(o => propsOf(o).moovable === true);
+
+this.elevators = this.physics.add.group({ allowGravity:false, immovable:true });
+
+for (const o of objs) {
+  const props = propsOf(o);
+  const isTileObj = o.gid != null;
+  const ox = o.x;
+  const oy = isTileObj ? o.y : (o.y + o.height);
+
+  const elev = new Elevator(this, ox, oy, 'elevator', {
+    ...props,
+    // si tu as dessiné un rectangle large dans Tiled, adapte l'affichage
+    bodyW: props.bodyW ?? o.width,  // largeur collision = largeur du rect
+    bodyH: props.bodyH ?? 50,       // épaisseur de la plateforme
+    bodyX: props.bodyX ?? 0,        // décalage horizontal
+    bodyY: props.bodyY ?? 0         // décalage depuis le bas
+  });
+
+  // étire l'image pour coller au rectangle visuel si besoin
+  if (!isTileObj && o.width) elev.setDisplaySize(o.width, elev.height);
+
+  elev.setDepth(10);
+  // on collisionne avec la plateforme, pas avec l'image
+  this.elevators.add(elev.platform);
+}
+
+// collision joueur ↔ plateforme
+this.physics.add.collider(this.player, this.elevators, (player, plat) => {
+  const owner = plat.getData('owner');   // <- plateforme → ascenseur
+  if (owner) owner.start();
+  player.setData('platform', plat);
+});
+
+
+
   }
 
-  update() {
-
+update() {
     this.player.update();
     this.drones?.forEach(d => d.update(this.player, this.mur, this.enemyBullets));
-    
-  }
 
+    // transporter le joueur avec la plateforme
+    const p = this.player.getData('platform');
+    if (p && this.player.body.blocked.down) {
+      this.player.x += p.body.deltaX();
+      this.player.y += p.body.deltaY();
+    } else {
+      this.player.setData('platform', null);
+    }
+  }
 }
 
 

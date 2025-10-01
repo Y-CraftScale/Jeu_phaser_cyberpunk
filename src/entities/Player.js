@@ -7,7 +7,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         scene.physics.add.existing(this); // Ajoute la physique au joueur courant. ici this fait référence au joueur hero que l'on a preload dans PreloaderScene
         this.setCollideWorldBounds(true); // Empêche le joueur de sortir des limites du monde
         this.setBounce(0.1); // Légère rebond
-        this.setDepth(10); // Assure que le joueur est au-dessus de certains éléments
+        this.setDepth(20); // Assure que le joueur est au-dessus de certains éléments
 
         this.speed = 140; // Vitesse de déplacement
         this.jumpV = -260; // Vitesse de saut
