@@ -19,6 +19,9 @@ export default class PreloaderScene extends Phaser.Scene {
     this.load.image('drone', 'assets/images/ennemis/drone.png');
     this.load.image('enemy_bullet', 'assets/images/ennemis/drone.png');
 
+    // ascenseur
+    this.load.image('elevator', 'assets/images/elevator.png');
+
 
   }
 
