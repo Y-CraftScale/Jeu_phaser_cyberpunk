@@ -5,6 +5,7 @@ export default class PreloaderScene extends Phaser.Scene {
     // tileset + carte
     this.load.image('tilesetv1', 'assets/images/tileset_v1.png');
     this.load.tilemapTiledJSON('map1', 'assets/maps/map1.tmj');
+    this.load.tilemapTiledJSON('map2', 'assets/maps/map2.tmj');
 
     // backgrounds
     this.load.image('bg_city', 'assets/images/background_city.png');
@@ -22,9 +23,24 @@ export default class PreloaderScene extends Phaser.Scene {
     // ascenseur
     this.load.image('elevator', 'assets/images/elevator.png');
 
+    //chest
+    this.load.spritesheet('chestSheet', 'assets/images/spritesheet_chest.png',
+      { frameWidth: 64, frameHeight: 54, margin: 0, spacing: 0 }
+    );
+
+    //door
+    this.load.spritesheet('door', 'assets/images/spritesheet_door.png',
+      { frameWidth: 192, frameHeight: 192, margin: 0, spacing: 0 }
+    );
+
+    //key
+    this.load.image('key', 'assets/images/key.png'); // ou spritesheet si besoin
+    
+    //fragments
+    this.load.image('fragment', 'assets/images/fragment.png'); // ou spritesheet si besoin
 
   }
 
-  create() { this.scene.start('Game'); }
+  create() {this.scene.start('Game', { mapKey: 'map1', nextMapKey: 'map2' });}
 
 }

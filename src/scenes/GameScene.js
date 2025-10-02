@@ -1,181 +1,267 @@
+// src/scenes/GameScene.js
 import Player from '../entities/Player.js';
 import Drone from '../entities/drone.js';
 import Elevator from '../entities/Elevator.js';
+import InventoryManager from '../managers/InventoryManager.js';
+import Chest from '../entities/chest.js';
+import Door from '../entities/door.js';
+import { collectibleFromTiled } from '../entities/collectible.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() { super('Game'); }
 
-  
-
-  // — utilitaire —
   addRepeatingBg({ key, y = 0, depth = -10, scrollFactor = 0.2, scaleToHeight = true, worldWidth } = {}) {
     const img = this.textures.get(key).getSourceImage();
+    if (!img) return;
     const w = img.width, h = img.height;
-
-    // on ajuste l’échelle pour que l’image fasse la hauteur de l’écran (optionnel)
-    let s = 1;
-    if (scaleToHeight) s = this.scale.height / h;
-
+    let s = scaleToHeight ? (this.scale.height / h) : 1;
     let x = 0, flip = false;
     while (x < worldWidth) {
       const spr = this.add.image(x, y, key).setOrigin(0, 0).setScale(s);
-      spr.setFlipX(flip);
-      spr.setDepth(depth);
-      spr.setScrollFactor(scrollFactor);
-      x += w * s;
-      flip = !flip; // miroir une fois sur deux
+      spr.setFlipX(flip).setDepth(depth).setScrollFactor(scrollFactor);
+      x += w * s; flip = !flip;
     }
-}
+  }
 
-  create() {
-    // charge la map
-    const map = this.make.tilemap({ key: 'map1' });
+  create(data = {}) {
+    // ---- paramètres scène ----
+    this.mapKey      = data.mapKey      || 'map1';
+    this.nextMapKey  = data.nextMapKey  || null;         // ex. 'map2'
+    const startX     = data.startX ?? 64;
+    const startY     = data.startY ?? 64;
+    this.inventory   = data.inventory || new InventoryManager();
 
-    // ATTENTION: "tilesetv1" doit être le NOM du tileset dans Tiled
+    // ---- map ----
+    const map   = this.make.tilemap({ key: this.mapKey });
     const tiles = map.addTilesetImage('tilesetv1', 'tilesetv1');
 
-    // crée les calques existants dans Tiled (adapte les noms)
-    this.bg       = map.createLayer('bg', tiles);
-    this.bg2      = map.createLayer('bg2', tiles);
-    this.mur      = map.createLayer('mur', tiles);
-    this.mur2     = map.createLayer('mur2', tiles);
-    this.grilles  = map.createLayer('grilles', tiles);
-    this.neonsroses = map.createLayer('neonsroses', tiles);
-    this.ascenseurs = map.createLayer('ascenseurs', tiles);
-    this.portefinale = map.createLayer('portefinale', tiles);
-    this.coffres = map.createLayer('coffres', tiles);
-    this.clés = map.createLayer('clés', tiles);
+    const L = (name) => (map.getLayer(name) ? map.createLayer(name, tiles) : null);
 
-    // collisions si tu as mis collides=true dans Tiled
+    this.bg          = L('bg');
+    this.bg2         = L('bg2');
+    this.mur         = L('mur');
+    this.mur2        = L('mur2');
+    this.grilles     = L('grilles');
+    this.neonsroses  = L('neonsroses');
+    this.portefinale = L('portefinale');
+    this.coffresL    = L('coffres');
+    this.clesLayer   = L('clés');
 
     this.mur?.setCollisionByExclusion([-1], true, true);
     this.mur2?.setCollisionByExclusion([-1], true, true);
     this.neonsroses?.setCollisionByExclusion([-1], true, true);
 
-    
-    // bornes monde + caméra
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.setZoom(1.5);
 
-
     const worldWidth = map.widthInPixels;
-
-    // couche la plus loin (bouge peu, derrière tout)
     this.addRepeatingBg({ key: 'bg_city2', worldWidth, depth: -10, scrollFactor: 0.15 });
-
-    // couche un peu plus proche
     this.addRepeatingBg({ key: 'bg_city',  worldWidth, depth: -30, scrollFactor: 0.25 });
 
-     // --- Spawn du joueur (change x,y ou lis un objet Tiled si tu en as un) ---
-    this.player = new Player(this, 64, 64);
-
-    // collisions joueur ↔ murs
+    // ---- player ----
+    this.player = new Player(this, startX, startY);
+    this.player.setDepth(20);
     this.physics.add.collider(this.player, this.mur);
     this.physics.add.collider(this.player, this.mur2);
-
-    // caméra suit le joueur
-    //0.12 est la vitesse a laquelle le caméra suit le joueur. Plus c'est proche de 1, plus c'est rapide.
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
-    // Groupe de balles ennemies
-    this.enemyBullets = this.physics.add.group({ //créer un groupe de balles en leurs ajoutant la physique d'arcade
-      classType: Phaser.Physics.Arcade.Image, // type d'objet dans le groupe
-      defaultKey: 'enemy_bullet', //utilise l'image 'enemy_bullet' pour les balles
+    // ---- input ----
+    this.keyE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+
+    // ---- enemies / bullets ----
+    this.enemyBullets = this.physics.add.group({
+      classType: Phaser.Physics.Arcade.Image,
+      defaultKey: 'enemy_bullet',
       maxSize: 50,
-      runChildUpdate: false 
+      runChildUpdate: false
     });
-
-    /* Détruire les balles sur mur ici c comme si enemyBullets était un tableau et que _b et _t seraient les éléments de ce tableau. = calback */
-    const killBullet = (bullet) => { bullet.destroy(); };
-    this.physics.add.collider(this.enemyBullets, this.mur,   (_b,_t)=>killBullet(_b)); 
-    this.physics.add.collider(this.enemyBullets, this.mur2,  (_b,_t)=>killBullet(_b));
-
-    // Dégâts joueur ← balles ennemies
+    const killBullet = (b) => b.destroy();
+    this.physics.add.collider(this.enemyBullets, this.mur,  (_b,_t)=>killBullet(_b));
+    this.physics.add.collider(this.enemyBullets, this.mur2, (_b,_t)=>killBullet(_b));
     this.physics.add.overlap(this.player, this.enemyBullets, (player, bullet) => {
       bullet.destroy();
-      // Ajoute un effet de recul au joueur la fonction Math.sign permet de vérifier si le joueur est à gauche ou à droite de la balle
-      /* exemple en faisant la position du joueur - la position de la balle surt la map. si cette valeur est positive alors |1 l'arrondie à 1
-      et si elle est négative à -1 et si === à 0 à  1 */
       const dir = Math.sign(player.x - bullet.x) || 1;
-      player.takeDamage(1, 160*dir, -160); // 1 point de vie, recul horizontal, recul vertical
+      player.takeDamage(1, 160*dir, -160);
     });
 
-    // Spawns drones
-    this.drones = [
-      new Drone(this, 300, 80),
-      new Drone(this, 600, 120),
-    ];
-    this.drones.forEach(d => { 
+    // ---- drones (exemple) ----
+    this.drones = [ new Drone(this, 300, 80), new Drone(this, 600, 120) ];
+    this.drones.forEach(d => {
       this.physics.add.collider(d, this.mur);
       this.physics.add.collider(d, this.mur2);
     });
 
-    // après avoir créé le joueur dans GameScene.create()
+    // ---- UI ----
     this.scene.launch('UI');
-    this.scene.bringToTop('UI'); // s’assure qu’elle est au-dessus
-    this.events.emit('player:hp', this.player.hp, this.player.maxHP); // init HUD
+    this.scene.bringToTop('UI');
+    this.events.emit('player:hp', this.player.hp, this.player.maxHP);
+    this.time.delayedCall(0, () => this.events.emit('player:hp', this.player.hp, this.player.maxHP));
 
-    // émettre après que l’UI ait eu le temps de s’abonner
-    this.time.delayedCall(0, () => {
-      this.events.emit('player:hp', this.player.hp, this.player.maxHP);
+    // ---- ascenseurs (object layer optionnel: 'ascenseurs') ----
+    const getProps = o => Object.fromEntries((o.properties || []).map(p => [p.name, p.value]));
+    this.elevators = this.physics.add.group({ allowGravity:false, immovable:true });
+    const ascLayer = map.getObjectLayer('ascenseurs');
+    if (ascLayer?.objects?.length) {
+      const ascObjs = ascLayer.objects.filter(o => {
+        const p = getProps(o);
+        return p.moovable === true || p.movable === true;
+      });
+      for (const o of ascObjs) {
+        const p  = getProps(o);
+        const isTile = o.gid != null;
+        const ox = o.x;
+        const oy = isTile ? o.y : (o.y + o.height);
+        const elev = new Elevator(this, ox, oy, 'elevator', {
+          ...p,
+          bodyW: o.width || undefined,
+          bodyH: p.bodyH ?? 12,
+          bodyX: p.bodyX ?? 0,
+          bodyY: p.bodyY ?? 0
+        });
+        elev.setDepth(10);
+        this.elevators.add(elev.platform);
+      }
+    }
+    this.physics.add.collider(this.player, this.elevators, (player, plat) => {
+      const owner = plat.getData && plat.getData('owner');
+      if (owner) owner.start();
+      player.setData('platform', plat);
     });
 
+    // ---- logic ----
+    const logicLayer = map.getObjectLayer('logic');
+    const logicObjs  = logicLayer?.objects ?? [];
+    const asType = o => ((o.type || o.class || o.name || '') + '').toLowerCase();
 
-// --- ASCENSEURS ---
-const layer = map.getObjectLayer('ascenseurs');
-const propsOf = o => Object.fromEntries((o.properties||[]).map(p=>[p.name,p.value]));
-const objs = (layer?.objects || []).filter(o => propsOf(o).moovable === true);
+    // collectibles
+    this.collectibles = this.physics.add.group({ allowGravity:false, immovable:true });
+    logicObjs.filter(o => o.type === 'fragment' || o.type === 'key').forEach(o => {
+      const c = collectibleFromTiled(this, o);
+      c.setDepth(100);
+      this.collectibles.add(c);
+    });
+    this.physics.add.overlap(this.player, this.collectibles, (_p, c) => c.pickup());
 
-this.elevators = this.physics.add.group({ allowGravity:false, immovable:true });
+    // coffres
+    this.chests = this.physics.add.group({ allowGravity:false, immovable:true });
+    logicObjs.filter(o => asType(o).startsWith('chest')).forEach(o => {
+      const isTile = o.gid != null;
+      const x = o.x, y = isTile ? o.y : (o.y + o.height);
+      const chest = new Chest(this, x, y, 'chestSheet', getProps(o)).setDepth(90);
+      this.chests.add(chest);
+    });
 
-for (const o of objs) {
-  const props = propsOf(o);
-  const isTileObj = o.gid != null;
-  const ox = o.x;
-  const oy = isTileObj ? o.y : (o.y + o.height);
+    // interaction coffre sur E (overlap instantané)
+    this.input.keyboard.removeAllListeners('keydown-E');
+    this.input.keyboard.on('keydown-E', () => {
+      let opened = false;
+      this.physics.overlap(this.player, this.chests, (_p, chest) => {
+        if (opened) return;
+        opened = !!chest.tryOpen(this.inventory);
+      });
+    });
 
-  const elev = new Elevator(this, ox, oy, 'elevator', {
-    ...props,
-    // si tu as dessiné un rectangle large dans Tiled, adapte l'affichage
-    bodyW: props.bodyW ?? o.width,  // largeur collision = largeur du rect
-    bodyH: props.bodyH ?? 50,       // épaisseur de la plateforme
-    bodyX: props.bodyX ?? 0,        // décalage horizontal
-    bodyY: props.bodyY ?? 0         // décalage depuis le bas
-  });
+    // portes (sans pads) → ouverture auto à 4 fragments
+    this.doors = this.physics.add.group({ allowGravity:false, immovable:true });
+    this.exitZone = null;
+    this.targetDoor = null;
 
-  // étire l'image pour coller au rectangle visuel si besoin
-  if (!isTileObj && o.width) elev.setDisplaySize(o.width, elev.height);
+    logicObjs.filter(o => asType(o) === 'door').forEach(o => {
+      const p = getProps(o);
+      const isTile = o.gid != null;
+      const x = o.x, y = isTile ? o.y : (o.y + o.height);
+      const d = new Door(this, x, y, 'door', { req: 4, ...p }).setDepth(80);
+      this.doors.add(d);
+      const count = this.inventory?.get?.(d.itemId) ?? 0;
+      d.updateProgress(count);
+      if (!this.targetDoor) this.targetDoor = d; // première porte = sortie par défaut
+    });
+    this.physics.add.collider(this.player, this.doors);
 
-  elev.setDepth(10);
-  // on collisionne avec la plateforme, pas avec l'image
-  this.elevators.add(elev.platform);
-}
-
-// collision joueur ↔ plateforme
-this.physics.add.collider(this.player, this.elevators, (player, plat) => {
-  const owner = plat.getData('owner');   // <- plateforme → ascenseur
-  if (owner) owner.start();
-  player.setData('platform', plat);
-});
-
-
-
+    this.createExitZoneIfOpen = () => {
+      if (!this.targetDoor || !this.targetDoor.opened || this.exitZone) return;
+      const b = this.targetDoor.getBounds();
+      this.exitZone = this.add.zone(b.centerX, b.centerY, b.width, b.height);
+      this.physics.add.existing(this.exitZone, true);
+      this.exitZone.setData('isExit', true);
+      this.physics.add.overlap(this.player, this.exitZone, () => {
+      // évite multiples triggers
+      if (this._leaving) return;
+      this._leaving = true;
+      // différer hors du step physique
+      this.time.delayedCall(0, () => this.gotoNextMap());
+     }, null, this);
+    };
   }
 
-update() {
+   gotoNextMap() {
+    if (!this.nextMapKey) { this._leaving = false; return; }
+
+    // Nettoyage basique
+    this._leaving = true;
+    this.input.keyboard.removeAllListeners('keydown-E');
+    if (this.player?.body) {
+      this.player.body.checkCollision.none = true;
+      this.player.body.enable = false; // OK maintenant car update est court-circuité
+    }
+    if (this.exitZone) this.exitZone.destroy(true);
+    this.scene.stop('UI');
+
+    const nextMapKey = this.nextMapKey;
+    const data = {
+      mapKey: nextMapKey,
+     nextMapKey: null,   // ou enchaîne vers la suivante si tu veux
+      startX: 64,
+      startY: 64,
+      inventory: this.inventory
+    };
+
+    // Si map non préchargée → charge à la volée puis démarre
+    const cacheHasMap = this.cache.tilemap.exists(nextMapKey);
+   if (!cacheHasMap) {
+      // charge de secours
+      this.load.tilemapTiledJSON(nextMapKey, `assets/maps/${nextMapKey}.tmj`);
+      this.load.once('complete', () => {
+        this.scene.start('Game', data);
+      });
+      this.load.start();
+      return;
+    }
+
+    // Démarrage différé pour sortir proprement du cycle courant
+    this.time.delayedCall(0, () => this.scene.start('Game', data));
+  }
+  
+
+
+  update() {
+
+    if (this._leaving) return;
     this.player.update();
+
     this.drones?.forEach(d => d.update(this.player, this.mur, this.enemyBullets));
 
-    // transporter le joueur avec la plateforme
     const p = this.player.getData('platform');
-    if (p && this.player.body.blocked.down) {
+    if (!this._leaving && p && this.player.body && this.player.body.blocked.down) {
       this.player.x += p.body.deltaX();
       this.player.y += p.body.deltaY();
     } else {
       this.player.setData('platform', null);
     }
+
+    // auto-open porte à 4 fragments
+    if (this.doors) {
+      this.doors.getChildren().forEach(d => {
+        if (!d.opened) {
+          const count = this.inventory?.get?.(d.itemId) ?? 0;
+          d.updateProgress(count);
+          if (count >= d.req) {
+            d.tryOpen(this.inventory);
+            this.createExitZoneIfOpen();
+          }
+        }
+      });
+    }
   }
 }
-
-
