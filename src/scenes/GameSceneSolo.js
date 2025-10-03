@@ -52,12 +52,13 @@ export default class GameSceneSolo extends Phaser.Scene {
     this.controls = {
       left:  this.input.keyboard.addKey(K.Q),
       right: this.input.keyboard.addKey(K.D),
-      jump:  this.input.keyboard.addKey(K.SPACE),
+      jump:  this.input.keyboard.addKey(K.SPACE),   // touche principale
+      jumpAlt: this.input.keyboard.addKey(K.Z),     // touche alternative (Z)
     };
     this.keyE = this.input.keyboard.addKey(K.E);
 
     // PLAYER
-    this.player = new Player(this, startX, startY, 'player', { controls: this.controls, enableDoubleJump:false });
+    this.player = new Player(this, startX, startY, 'player', { controls: this.controls, enableDoubleJump:true });
     this.player.setDepth(20);
     this.physics.add.collider(this.player, this.mur);
     this.physics.add.collider(this.player, this.mur2);
@@ -77,10 +78,16 @@ export default class GameSceneSolo extends Phaser.Scene {
     this.drones.forEach(d=>{ this.physics.add.collider(d, this.mur); this.physics.add.collider(d, this.mur2); });
 
     // UI
-    this.scene.launch('UI'); this.scene.bringToTop('UI');
-    this.events.emit('player:hp', this.player.hp, this.player.maxHP);
+    this.scene.launch('UI', {
+    parent: this.scene.key,
+    players: [this.player],
+    inventory: this.inventory
+    });
+    this.scene.bringToTop('UI');
+    // ping après abonnement
+    this.time.delayedCall(0, () => this.events.emit('player:hp', this.player.hp, this.player.maxHP));
 
-    // ASCENSEURS
+        // ASCENSEURS
     const P = o => Object.fromEntries((o.properties||[]).map(p=>[p.name,p.value]));
     this.elevators = this.physics.add.group({ allowGravity:false, immovable:true });
     const ascLayer = map.getObjectLayer('ascenseurs');

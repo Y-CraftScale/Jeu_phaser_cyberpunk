@@ -49,13 +49,18 @@ export default class GameSceneMultijoueur extends Phaser.Scene {
 
     // INPUTS
     const K = Phaser.Input.Keyboard.KeyCodes;
-    const p1c = { left:this.input.keyboard.addKey(K.Q), right:this.input.keyboard.addKey(K.D), jump:this.input.keyboard.addKey(K.SPACE) };
+    const p1c = {
+      left: this.input.keyboard.addKey(K.Q),
+      right: this.input.keyboard.addKey(K.D),
+      jump: this.input.keyboard.addKey(K.SPACE),
+      jumpAlt: this.input.keyboard.addKey(K.Z),
+    };
     const p2c = { left:this.input.keyboard.addKey(K.K), right:this.input.keyboard.addKey(K.M), jump:this.input.keyboard.addKey(K.O) };
     this.keyE = this.input.keyboard.addKey(K.E);
 
     // PLAYERS
-    this.player1 = new Player(this, startX, startY, 'player', { controls: p1c, enableDoubleJump:false });
     this.player2 = new Player(this, startX+24, startY, 'player2', { controls: p2c, enableDoubleJump:true });
+    this.player1 = new Player(this, startX, startY, 'player', { controls: p1c, enableDoubleJump:true });
 
     [this.player1, this.player2].forEach(p=>{
       p.setDepth(20);
@@ -81,8 +86,13 @@ export default class GameSceneMultijoueur extends Phaser.Scene {
     this.drones.forEach(d=>{ this.physics.add.collider(d, this.mur); this.physics.add.collider(d, this.mur2); });
 
     // UI
-    this.scene.launch('UI'); this.scene.bringToTop('UI');
-    this.events.emit('player:hp', this.player1.hp, this.player1.maxHP);
+    this.scene.launch('UI', {
+    parent: this.scene.key,
+    players: [this.player1, this.player2],
+    inventory: this.inventory
+    });
+    this.scene.bringToTop('UI');
+    this.time.delayedCall(0, () => this.events.emit('player:hp', this.player1.hp, this.player1.maxHP));
 
     // ASCENSEURS
     const P = o => Object.fromEntries((o.properties||[]).map(p=>[p.name,p.value]));
@@ -167,14 +177,8 @@ export default class GameSceneMultijoueur extends Phaser.Scene {
       this.load.once('complete', ()=> this.scene.start('GameSceneMultijoueur', next));
       this.load.start(); return;
     }
-    this.time.delayedCall(0, ()=> this.scene.start('GameSceneMultijoueur', next));
 
-    // GameSceneMultijoueur.create()
-    this.scene.launch('UI', {
-      parent: this.scene.key,          // "GameSceneMultijoueur"
-      players: [this.player1, this.player2],
-      inventory: this.inventory
-    });
+      this.time.delayedCall(0, ()=> this.scene.start('GameSceneMultijoueur', next));
 
   }
 

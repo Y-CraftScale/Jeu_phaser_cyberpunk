@@ -38,10 +38,19 @@ export default class UIScene extends Phaser.Scene {
       fontSize: '12px', backgroundColor: '#000', padding: { x: 6, y: 4 }
     }).setScrollFactor(0).setDepth(1000);
 
+    // ---- FONCTION DE MISE À JOUR INVENTAIRE ----
     const renderInv = () => {
+      // Valeurs principales
       const frag = this.inventory?.get?.('doorFragment') ?? 0;
-      const keys = this.inventory?.get?.('chestKey') ?? 0;
-      this.invText.setText(`Fragments: ${frag}\nKeys: ${keys}`);
+      const keys = (this.inventory?.get?.('chestKey') ?? 0) + (this.inventory?.get?.('key') ?? 0);
+
+      // Si InventoryManager expose entries() ou toJSON() => debug
+      const dump = this.inventory?.entries?.() ?? [];
+      const extra = dump.length
+        ? '\n' + dump.map(([k, v]) => `${k}: ${v}`).join('\n')
+        : '';
+
+      this.invText.setText(`Fragments: ${frag}\nKeys: ${keys}${extra}`);
     };
 
     // Abonnement si InventoryManager émet des events
@@ -59,10 +68,10 @@ export default class UIScene extends Phaser.Scene {
       this.time.addEvent({ delay: 200, loop: true, callback: renderInv });
     }
 
-    // Init
+    // Init immédiate
     renderInv();
 
-    // Option: montrer les deux joueurs
+    // Option: afficher tag 2P si mode multijoueur
     if (this.players.length > 1) {
       this.add.text(width - 8, 8, '2P', {
         fontSize: '12px', backgroundColor: '#000', padding: { x: 6, y: 4 }

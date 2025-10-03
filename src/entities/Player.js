@@ -10,7 +10,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.setDrag(800, 0);
 
     this.moveSpeed = opts.moveSpeed ?? 180;
-    this.jumpSpeed = opts.jumpSpeed ?? 280;
+    this.jumpSpeed = opts.jumpSpeed ?? 380;
 
      // Animations: préfixe = clé texture par défaut
     this.animPrefix = opts.animPrefix ?? this.texture.key; // ex: 'player' ou 'player2'
@@ -30,6 +30,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   takeDamage(n = 1, vx = 0, vy = -120) {
     this.hp = Math.max(0, this.hp - n);
     this.setVelocity(vx, vy);
+    // notifier l’UI
+    if (this.scene?.events) {
+      this.scene.events.emit('player:hp', this.hp, this.maxHP);
+    }
   }
 
   _pressed(key) {
@@ -40,10 +44,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   _justPressed(key) {
     return key && Phaser.Input.Keyboard.JustDown(key);
   }
+  _anyDown(keys=[]) { return keys.some(k => this._pressed(k)); }
+  _anyJustPressed(keys=[]) { return keys.some(k => this._justPressed(k)); }
 
   _handleJump() {
     const onFloor = this.body?.blocked?.down || this.body?.touching?.down;
-    const jumpKey = this.controls.jump;
+    const jumpKeys = [this.controls.jump, this.controls.jumpAlt].filter(Boolean);
 
     // Reset stock double-saut quand on retouche le sol
     if (onFloor && !this._wasOnFloor) {
@@ -51,7 +57,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
     this._wasOnFloor = onFloor;
 
-    if (this._justPressed(jumpKey)) {
+    if (this._anyJustPressed(jumpKeys)) {
       if (onFloor) {
         this.setVelocityY(-this.jumpSpeed);
         return;
