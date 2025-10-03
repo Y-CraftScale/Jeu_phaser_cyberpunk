@@ -41,6 +41,6 @@ export default class PreloaderScene extends Phaser.Scene {
 
   }
 
-  create() {this.scene.start('Game', { mapKey: 'map1', nextMapKey: 'map2' });}
+  create() {this.scene.start('Menu')}
 
 }
