@@ -12,6 +12,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.moveSpeed = opts.moveSpeed ?? 180;
     this.jumpSpeed = opts.jumpSpeed ?? 280;
 
+     // Animations: préfixe = clé texture par défaut
+    this.animPrefix = opts.animPrefix ?? this.texture.key; // ex: 'player' ou 'player2'
+
     // Contrôles injectés par la scène
     this.controls = opts.controls || {};
     // Double saut activable pour J2
@@ -58,6 +61,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.setVelocityY(-this.jumpSpeed);
       }
     }
+    
   }
 
   update() {
@@ -77,5 +81,20 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Saut / double saut
     this._handleJump();
+
+    // --- Animations en fonction de l’état ---
+    const body = this.body;
+    const vx = body?.velocity?.x || 0;
+    const onFloor = body?.blocked?.down || body?.touching?.down;
+
+    if (!onFloor) {
+      this.anims.play(`${this.animPrefix}_jump`, true);
+    } else if (Math.abs(vx) > 5) {
+      this.anims.play(`${this.animPrefix}_run`, true);
+    } else {
+      this.anims.play(`${this.animPrefix}_idle`, true);
+    }
+
+
   }
 }

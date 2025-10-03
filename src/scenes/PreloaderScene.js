@@ -12,7 +12,10 @@ export default class PreloaderScene extends Phaser.Scene {
     this.load.image('bg_city2', 'assets/images/bg_city2.png');
 
     // perso
-    this.load.spritesheet('hero', 'assets/images/spritesheet_perso_principal/spritesheet_perso_principal_course.png',
+    this.load.spritesheet('player', 'assets/images/spritesheet_perso_principal/spritesheet_perso_principal_course.png',
+      {  frameWidth: 32, frameHeight: 64, margin: 0, spacing: 0 }
+    );
+    this.load.spritesheet('player2', 'assets/images/spritesheet_perso_principal/spritesheet_perso_principal_course.png',
       {  frameWidth: 32, frameHeight: 64, margin: 0, spacing: 0 }
     );
 
@@ -41,6 +44,32 @@ export default class PreloaderScene extends Phaser.Scene {
 
   }
 
-  create() {this.scene.start('MainMenu')}
+  create() {this.scene.start('MainMenu')
+
+    // PreloaderScene.create()
+this.anims.create({
+  key: 'player_idle',
+  frames: this.anims.generateFrameNumbers('player', { start: 0, end: 0 }),
+  frameRate: 1,
+  repeat: -1
+});
+this.anims.create({
+  key: 'player_run',
+  frames: this.anims.generateFrameNumbers('player', { start: 1, end: 6 }), // ajuste au besoin
+  frameRate: 10,
+  repeat: -1
+});
+this.anims.create({
+  key: 'player_jump',
+  frames: [{ key: 'player', frame: 7 }], // ajuste
+  frameRate: 1
+});
+
+// Si 'player2' a sa propre spritesheet:
+this.anims.create({ key: 'player2_idle', frames: this.anims.generateFrameNumbers('player2', { start: 0, end: 0 }), frameRate: 1, repeat: -1 });
+this.anims.create({ key: 'player2_run',  frames: this.anims.generateFrameNumbers('player2', { start: 1, end: 6 }), frameRate: 10, repeat: -1 });
+this.anims.create({ key: 'player2_jump', frames: [{ key: 'player2', frame: 7 }], frameRate: 1 });
+
+  }
 
 }
