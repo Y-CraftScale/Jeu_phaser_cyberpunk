@@ -1,4 +1,4 @@
-// src/scenes/GameSceneSolo.js
+// src/scenes/GameSceneMultijoueur.js
 import Player from '../entities/Player.js';
 import Drone from '../entities/drone.js';
 import Elevator from '../entities/Elevator.js';
@@ -7,8 +7,8 @@ import Chest from '../entities/chest.js';
 import Door from '../entities/door.js';
 import { collectibleFromTiled } from '../entities/collectible.js';
 
-export default class GameSceneSolo extends Phaser.Scene {
-  constructor() { super('GameSceneSolo'); }
+export default class GameSceneMultijoueur extends Phaser.Scene {
+  constructor() { super('GameSceneMultijoueur'); }
 
   addRepeatingBg({ key, y = 0, depth = -10, scrollFactor = 0.2, scaleToHeight = true, worldWidth } = {}) {
     const img = this.textures.get(key)?.getSourceImage?.(); if (!img) return;
@@ -49,28 +49,32 @@ export default class GameSceneSolo extends Phaser.Scene {
 
     // INPUTS
     const K = Phaser.Input.Keyboard.KeyCodes;
-    this.controls = {
-      left:  this.input.keyboard.addKey(K.Q),
-      right: this.input.keyboard.addKey(K.D),
-      jump:  this.input.keyboard.addKey(K.SPACE),
-    };
+    const p1c = { left:this.input.keyboard.addKey(K.Q), right:this.input.keyboard.addKey(K.D), jump:this.input.keyboard.addKey(K.SPACE) };
+    const p2c = { left:this.input.keyboard.addKey(K.K), right:this.input.keyboard.addKey(K.M), jump:this.input.keyboard.addKey(K.O) };
     this.keyE = this.input.keyboard.addKey(K.E);
 
-    // PLAYER
-    this.player = new Player(this, startX, startY, 'player', { controls: this.controls, enableDoubleJump:false });
-    this.player.setDepth(20);
-    this.physics.add.collider(this.player, this.mur);
-    this.physics.add.collider(this.player, this.mur2);
-    this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+    // PLAYERS
+    this.player1 = new Player(this, startX, startY, 'player', { controls: p1c, enableDoubleJump:false });
+    this.player2 = new Player(this, startX+24, startY, 'player2', { controls: p2c, enableDoubleJump:true });
+
+    [this.player1, this.player2].forEach(p=>{
+      p.setDepth(20);
+      this.physics.add.collider(p, this.mur);
+      this.physics.add.collider(p, this.mur2);
+    });
+
+    // CAMERA milieu des deux
+    this.followTarget = this.add.rectangle(this.player1.x, this.player1.y, 2, 2, 0, 0);
+    this.cameras.main.startFollow(this.followTarget, true, 0.12, 0.12);
 
     // ENEMY BULLETS
-    this.enemyBullets = this.physics.add.group({ classType: Phaser.Physics.Arcade.Image, defaultKey: 'enemy_bullet', maxSize: 50 });
-    const killBullet = (b)=>b.destroy();
+    this.enemyBullets = this.physics.add.group({ classType: Phaser.Physics.Arcade.Image, defaultKey: 'enemy_bullet', maxSize:50 });
+    const killBullet = b=>b.destroy();
     this.physics.add.collider(this.enemyBullets, this.mur,  (_b,_t)=>killBullet(_b));
     this.physics.add.collider(this.enemyBullets, this.mur2, (_b,_t)=>killBullet(_b));
-    this.physics.add.overlap(this.player, this.enemyBullets, (pl, bullet)=>{
-      bullet.destroy(); const dir = Math.sign(pl.x - bullet.x) || 1; pl.takeDamage(1, 160*dir, -160);
-    });
+    const hit = (pl, bullet)=>{ bullet.destroy(); const dir=Math.sign(pl.x-bullet.x)||1; pl.takeDamage(1,160*dir,-160); };
+    this.physics.add.overlap(this.player1, this.enemyBullets, hit);
+    this.physics.add.overlap(this.player2, this.enemyBullets, hit);
 
     // DRONES
     this.drones = [ new Drone(this, 300, 80), new Drone(this, 600, 120) ];
@@ -78,7 +82,7 @@ export default class GameSceneSolo extends Phaser.Scene {
 
     // UI
     this.scene.launch('UI'); this.scene.bringToTop('UI');
-    this.events.emit('player:hp', this.player.hp, this.player.maxHP);
+    this.events.emit('player:hp', this.player1.hp, this.player1.maxHP);
 
     // ASCENSEURS
     const P = o => Object.fromEntries((o.properties||[]).map(p=>[p.name,p.value]));
@@ -90,8 +94,10 @@ export default class GameSceneSolo extends Phaser.Scene {
         const elev=new Elevator(this,ox,oy,'elevator',{...p,bodyW:o.width||undefined,bodyH:p.bodyH??12,bodyX:p.bodyX??0,bodyY:p.bodyY??0});
         elev.setDepth(10); this.elevators.add(elev.platform);
       });
-    this.physics.add.collider(this.player, this.elevators, (pl, plat)=>{
-      const owner = plat.getData && plat.getData('owner'); if (owner) owner.start(); pl.setData('platform', plat);
+    [this.player1,this.player2].forEach(pl=>{
+      this.physics.add.collider(pl, this.elevators, (player, plat)=>{
+        const owner = plat.getData && plat.getData('owner'); if (owner) owner.start(); player.setData('platform', plat);
+      });
     });
 
     // LOGIC
@@ -103,7 +109,9 @@ export default class GameSceneSolo extends Phaser.Scene {
     logicObjs.filter(o => o.type==='fragment' || o.type==='key').forEach(o=>{
       const c = collectibleFromTiled(this, o); c.setDepth(100); this.collectibles.add(c);
     });
-    this.physics.add.overlap(this.player, this.collectibles, (_p,c)=>c.pickup());
+    const pick = (_p,c)=>c.pickup();
+    this.physics.add.overlap(this.player1, this.collectibles, pick);
+    this.physics.add.overlap(this.player2, this.collectibles, pick);
 
     // Coffres
     this.chests = this.physics.add.group({ allowGravity:false, immovable:true });
@@ -114,7 +122,8 @@ export default class GameSceneSolo extends Phaser.Scene {
     this.input.keyboard.removeAllListeners('keydown-E');
     this.input.keyboard.on('keydown-E', ()=>{
       let opened=false;
-      this.physics.overlap(this.player, this.chests, (_p, chest)=>{ if (!opened) opened = !!chest.tryOpen(this.inventory); });
+      const tryFor = (pl)=> this.physics.overlap(pl, this.chests, (_p,ch)=>{ if(!opened) opened=!!ch.tryOpen(this.inventory); });
+      tryFor(this.player1); tryFor(this.player2);
     });
 
     // Portes
@@ -126,56 +135,69 @@ export default class GameSceneSolo extends Phaser.Scene {
       this.doors.add(d); const count=this.inventory?.get?.(d.itemId)??0; d.updateProgress(count);
       if (!this.targetDoor) this.targetDoor = d;
     });
-    this.physics.add.collider(this.player, this.doors);
+    this.physics.add.collider(this.player1, this.doors);
+    this.physics.add.collider(this.player2, this.doors);
 
     this.createExitZoneIfOpen = () => {
       if (!this.targetDoor || !this.targetDoor.opened || this.exitZone) return;
       const b = this.targetDoor.getBounds();
       this.exitZone = this.add.zone(b.centerX, b.centerY, b.width, b.height);
       this.physics.add.existing(this.exitZone, true);
-      this.physics.add.overlap(this.player, this.exitZone, ()=>{
-        if (this._leaving) return; this._leaving = true; this.time.delayedCall(0, ()=>this.gotoNextMap());
-      });
+      const overlapExit = ()=>{
+        if (this._leaving) return;
+        this._leaving = true;
+        this.time.delayedCall(0, ()=>this.gotoNextMap());
+      };
+      this.physics.add.overlap(this.player1, this.exitZone, overlapExit, null, this);
+      this.physics.add.overlap(this.player2, this.exitZone, overlapExit, null, this);
     };
   }
 
   gotoNextMap() {
     if (!this.nextMapKey) { this._leaving = false; return; }
     this.input.keyboard.removeAllListeners('keydown-E');
-    if (this.player?.body) { this.player.body.checkCollision.none = true; this.player.body.enable = false; }
+    [this.player1,this.player2].forEach(p=>{ if(p?.body){ p.body.checkCollision.none = true; p.body.enable=false; }});
     if (this.exitZone) this.exitZone.destroy(true);
     this.scene.stop('UI');
 
-    const next = { mapKey: this.nextMapKey, nextMapKey: null, startX:64, startY:64, inventory: this.inventory };
+    const next = { mapKey:this.nextMapKey, nextMapKey:null, startX:64, startY:64, inventory:this.inventory };
     const has = this.cache.tilemap.exists(this.nextMapKey);
     if (!has) {
       this.load.tilemapTiledJSON(this.nextMapKey, `assets/maps/${this.nextMapKey}.tmj`);
-      this.load.once('complete', ()=> this.scene.start('GameSceneSolo', next));
+      this.load.once('complete', ()=> this.scene.start('GameSceneMultijoueur', next));
       this.load.start(); return;
     }
-    this.time.delayedCall(0, ()=> this.scene.start('GameSceneSolo', next));
+    this.time.delayedCall(0, ()=> this.scene.start('GameSceneMultijoueur', next));
 
-    // GameSceneSolo.create()
+    // GameSceneMultijoueur.create()
     this.scene.launch('UI', {
-    parent: this.scene.key,          // "GameSceneSolo"
-    players: [this.player],
-    inventory: this.inventory
+      parent: this.scene.key,          // "GameSceneMultijoueur"
+      players: [this.player1, this.player2],
+      inventory: this.inventory
     });
 
   }
 
   update() {
     if (this._leaving) return;
-    this.player.update();
+
+    this.player1.update();
+    this.player2.update();
 
     // plateformes
-    const plat = this.player.getData('platform');
-    if (plat && this.player.body?.blocked?.down) {
-      this.player.x += plat.body.deltaX(); this.player.y += plat.body.deltaY();
-    } else { this.player.setData('platform', null); }
+    const carry = (pl) => {
+      const plat = pl.getData('platform');
+      if (plat && pl.body?.blocked?.down) { pl.x += plat.body.deltaX(); pl.y += plat.body.deltaY(); }
+      else { pl.setData('platform', null); }
+    };
+    carry(this.player1); carry(this.player2);
 
-    // drones
-    this.drones?.forEach(d => d.update(this.player, this.mur, this.enemyBullets));
+    // midpoint caméra
+    const mx=(this.player1.x+this.player2.x)/2, my=(this.player1.y+this.player2.y)/2;
+    this.followTarget.setPosition(mx,my);
+
+    // drones (cible J1 par défaut)
+    this.drones?.forEach(d => d.update(this.player1, this.mur, this.enemyBullets));
 
     // portes
     this.doors?.getChildren().forEach(d=>{

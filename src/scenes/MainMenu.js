@@ -1,56 +1,31 @@
-// src/scenes/MenuScene.js
-export default class MenuScene extends Phaser.Scene {
-  constructor() { super('Menu'); }
+export default class MainMenu extends Phaser.Scene {
+  constructor(){super('MainMenu');}
 
-  create() {
-    const { width, height } = this.scale;
+  create(){
+    const {width,height}=this.scale;
+    this.add.text(width/2,100,"Mon Jeu Futuriste",{fontSize:"48px",color:"#fff",stroke:"#000",strokeThickness:6}).setOrigin(0.5);
 
-    // Titre
-    this.add.text(width / 2, 100, "Mon Jeu Futuriste", {
-      fontSize: "48px",
-      color: "#ffffff",
-      fontFamily: "Arial",
-      stroke: "#000000",
-      strokeThickness: 6
-    }).setOrigin(0.5);
-
-    // --- Boutons ---
-    this.createButton(width / 2, height / 2 - 50, "Help", () => this.showHelp());
-    this.createButton(width / 2, height / 2 + 20, "Jouer", () => {
-      this.scene.start("Game", { mapKey: "map1", nextMapKey: "map2" });
-    });
-    this.createButton(width / 2, height / 2 + 90, "Mode Multijoueur", () => {
-      this.scene.start("Game", { mapKey: "map1", nextMapKey: "map2", multiplayer: true });
-    });
+    this.createBtn(width/2,height/2-40,"Help",()=>this.showHelp());
+    this.createBtn(width/2,height/2+30,"Jouer (Solo)",()=>this.scene.start('GameSceneSolo',{mapKey:'map1',nextMapKey:'map2'}));
+    this.createBtn(width/2,height/2+100,"Mode Multijoueur",()=>this.scene.start('GameSceneMultijoueur',{mapKey:'map1',nextMapKey:'map2'}));
   }
 
-  createButton(x, y, text, callback) {
-    const btn = this.add.text(x, y, text, {
-      fontSize: "28px",
-      color: "#ffffff",
-      backgroundColor: "#444",
-      padding: { x: 20, y: 10 }
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
-    btn.on("pointerover", () => btn.setStyle({ backgroundColor: "#666" }));
-    btn.on("pointerout",  () => btn.setStyle({ backgroundColor: "#444" }));
-    btn.on("pointerdown", callback);
+  createBtn(x,y,text,cb){
+    const b=this.add.text(x,y,text,{fontSize:"28px",backgroundColor:"#444",padding:{x:20,y:10}}).setOrigin(0.5).setInteractive();
+    b.on('pointerover',()=>b.setStyle({backgroundColor:'#666'}));
+    b.on('pointerout',()=>b.setStyle({backgroundColor:'#444'}));
+    b.on('pointerdown',cb);
   }
 
-  showHelp() {
-    const { width, height } = this.scale;
-    const bg = this.add.rectangle(width/2, height/2, width*0.8, height*0.6, 0x000000, 0.8);
-    const txt = this.add.text(width/2, height/2,
-      "Joueur 1: ZQSD + ESPACE pour sauter\nJoueur 2: K/M pour se déplacer, O pour sauter/double saut\nE: ouvrir les coffres",
-      { fontSize: "20px", color: "#ffffff", align: "center", wordWrap: { width: width*0.7 } }
+  showHelp(){
+    const {width,height}=this.scale;
+    const bg=this.add.rectangle(width/2,height/2,width*0.8,height*0.6,0x000000,0.8);
+    const txt=this.add.text(width/2,height/2,
+      "Joueur1: ZQSD + Espace\nJoueur2: K/M et O (double saut)\nE: ouvrir coffres",
+      {fontSize:"20px",align:"center",color:"#fff",wordWrap:{width:width*0.7}}
     ).setOrigin(0.5);
-    const closeBtn = this.add.text(width/2, height/2 + 100, "Fermer", {
-      fontSize: "24px", color: "#ffffff", backgroundColor:"#666", padding:{x:15,y:5}
-    }).setOrigin(0.5).setInteractive({useHandCursor:true});
-
-    closeBtn.on("pointerdown", () => {
-      bg.destroy(); txt.destroy(); closeBtn.destroy();
-    });
+    const close=this.add.text(width/2,height/2+100,"Fermer",{fontSize:"24px",backgroundColor:"#666",padding:{x:15,y:5}})
+      .setOrigin(0.5).setInteractive();
+    close.on('pointerdown',()=>{bg.destroy();txt.destroy();close.destroy();});
   }
 }
-

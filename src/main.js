@@ -1,7 +1,8 @@
 // src/main.js
 import PreloaderScene from './scenes/PreloaderScene.js';
 import MainMenu from './scenes/MainMenu.js';
-import GameScene from './scenes/GameScene.js';
+import GameSceneSolo from './scenes/GameSceneSolo.js';
+import GameSceneMultijoueur from './scenes/GameSceneMultijoueur.js';
 import UIScene from './scenes/UIScene.js';
 import GameOverScene from './scenes/GameOverScene.js';
 
@@ -23,7 +24,7 @@ const config = {
             debug: true // Mettez 'false' pour la version finale
         }
     },
-    scene: [PreloaderScene, MainMenu, GameScene, UIScene, GameOverScene]
+    scene: [PreloaderScene, MainMenu, GameSceneSolo, GameSceneMultijoueur, UIScene, GameOverScene]
 };
 
 const game = new Phaser.Game(config);
