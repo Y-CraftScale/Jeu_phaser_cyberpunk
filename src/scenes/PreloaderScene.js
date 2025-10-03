@@ -73,3 +73,4 @@ this.anims.create({ key: 'player2_jump', frames: [{ key: 'player2', frame: 7 }],
   }
 
 }
+
