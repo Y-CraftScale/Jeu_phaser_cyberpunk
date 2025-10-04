@@ -4,6 +4,7 @@ export default class PreloaderScene extends Phaser.Scene {
   preload() {
     // tileset + carte
     this.load.image('tilesetv1', 'assets/images/tileset_v1.png');
+    this.load.image('tilesetv2', 'assets/images/tileset_v2.png');
     this.load.tilemapTiledJSON('map1', 'assets/maps/map1.tmj');
     this.load.tilemapTiledJSON('map2', 'assets/maps/map2.tmj');
 

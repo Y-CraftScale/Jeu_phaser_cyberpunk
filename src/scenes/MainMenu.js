@@ -6,8 +6,8 @@ export default class MainMenu extends Phaser.Scene {
     this.add.text(width/2,100,"Mon Jeu Futuriste",{fontSize:"48px",color:"#fff",stroke:"#000",strokeThickness:6}).setOrigin(0.5);
 
     this.createBtn(width/2,height/2-40,"Help",()=>this.showHelp());
-    this.createBtn(width/2,height/2+30,"Jouer (Solo)",()=>this.scene.start('GameSceneSolo',{mapKey:'map1',nextMapKey:'map2'}));
-    this.createBtn(width/2,height/2+100,"Mode Multijoueur",()=>this.scene.start('GameSceneMultijoueur',{mapKey:'map1',nextMapKey:'map2'}));
+    this.createBtn(width/2,height/2+30,"Jouer (Solo)",()=>this.scene.start('GameSceneSoloMap2'));
+    this.createBtn(width/2,height/2+100,"Mode Multijoueur",()=>this.scene.start('GameSceneMultiMap2'));
   }
 
   createBtn(x,y,text,cb){
