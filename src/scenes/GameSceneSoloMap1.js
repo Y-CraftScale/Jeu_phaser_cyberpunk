@@ -79,7 +79,17 @@ export default class GameSceneSoloMap1 extends Phaser.Scene {
     this.physics.add.overlap(this.player,this.enemyBullets,(pl,bullet)=>{ bullet.destroy();});
 
     // --- DRONES
-    this.drones=[ new Drone(this,300,80), new Drone(this,600,120) ];
+    this.drones=[ 
+      
+      new Drone(this,300,80), 
+      new Drone(this,800,120),
+      new Drone(this,2740,250),
+      new Drone(this,1500,500),
+      new Drone(this,2000,100) 
+    
+    ];
+    
+    
     this.drones.forEach(d=>{ this.physics.add.collider(d,this.mur); this.physics.add.collider(d,this.mur2); });
 
     // --- UI

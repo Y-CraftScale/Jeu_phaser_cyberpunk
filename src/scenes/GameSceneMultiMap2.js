@@ -118,8 +118,17 @@ export default class GameSceneMultiMap2 extends Phaser.Scene {
     this.physics.add.overlap(this.player2, this.enemyBullets, hit);
 
     // --- DRONES
-    this.drones=[ new Drone(this,300,80), new Drone(this,600,120) ];
-    this.drones.forEach(d=>{ this.physics.add.collider(d,this.mur); this.physics.add.collider(d,this.mur2); });
+    this.drones=[ 
+        
+        new Drone(this,300,500), 
+        new Drone(this,800,100),
+        new Drone(this,2540,250),
+        new Drone(this,1200,500),
+        new Drone(this,2000,200) 
+    
+    ];
+    
+        this.drones.forEach(d=>{ this.physics.add.collider(d,this.mur); this.physics.add.collider(d,this.mur2); });
 
     // --- ASCENSEURS
     const P=o=>Object.fromEntries((o.properties||[]).map(p=>[p.name,p.value]));
