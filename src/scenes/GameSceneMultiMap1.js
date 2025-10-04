@@ -49,7 +49,7 @@ export default class GameSceneMultiMap1 extends Phaser.Scene {
 
     // Parallax
     const ww=map.widthInPixels;
-    this.addRepeatingBg({ key:'bg_city2', worldWidth: ww, depth:-10, scrollFactor:0.15 });
+    this.addRepeatingBg({ key:'bg_map2', worldWidth: ww, depth:-10, scrollFactor:0.15 });
     this.addRepeatingBg({ key:'bg_city',  worldWidth: ww, depth:-30, scrollFactor:0.25 });
 
     // --- INPUT
