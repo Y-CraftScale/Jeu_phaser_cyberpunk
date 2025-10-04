@@ -28,13 +28,22 @@ export default class GameSceneMultiMap1 extends Phaser.Scene {
     const tiles=map.addTilesetImage('tilesetv1','tilesetv1');
     const L = n => (map.getLayer(n) ? map.createLayer(n, tiles) : null);
 
-    this.bg=L('bg'); this.bg2=L('bg2'); this.mur=L('mur'); this.mur2=L('mur2');
-    this.grilles=L('grilles'); this.neonsroses=L('neonsroses'); this.portefinale=L('portefinale');
-    this.coffresL=L('coffres'); this.clesLayer=L('clés');
+    this.bg=L('bg'); 
+    this.bg2=L('bg2'); 
+    this.mur=L('mur'); 
+    this.mur2=L('mur2');
+    this.grilles=L('grilles'); 
+    this.neonsbleues=L('neonsbleues'); 
+    this.portefinale=L('portefinale');
+    this.coffresL=L('coffres'); 
+    this.clesLayer=L('clés');
+    this.servers = L('servers');
+    this.salle1 =L('salle1');
+    this.panneaux = L('panneaux');
 
     this.mur?.setCollisionByExclusion([-1], true, true);
     this.mur2?.setCollisionByExclusion([-1], true, true);
-    this.neonsroses?.setCollisionByExclusion([-1], true, true);
+    this.neonsbleues?.setCollisionByExclusion([-1], true, true);
 
     this.physics.world.setBounds(0,0,map.widthInPixels,map.heightInPixels);
 
