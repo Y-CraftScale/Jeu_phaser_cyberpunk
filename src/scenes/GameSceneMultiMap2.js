@@ -68,6 +68,15 @@ export default class GameSceneMultiMap2 extends Phaser.Scene {
       this.physics.add.collider(p,this.mur2);
     });
 
+    // --- GAME OVER
+    this._gameOver = false;
+    this.goGameOver = () => {
+    if (this._gameOver) return;
+    this._gameOver = true;
+    this.scene.stop('UI');
+    this.scene.start('GameOverScene', { from: this.scene.key });
+    };
+
     // --- UI
     this.scene.launch('UI',{ parent:this.scene.key, players:[this.player1,this.player2], inventory:this.inventory });
     this.scene.bringToTop('UI');
@@ -94,9 +103,19 @@ export default class GameSceneMultiMap2 extends Phaser.Scene {
     const killBullet=b=>b.destroy();
     this.physics.add.collider(this.enemyBullets,this.mur, (_b)=>killBullet(_b));
     this.physics.add.collider(this.enemyBullets,this.mur2,(_b)=>killBullet(_b));
-    const hit=(pl,bullet)=>{ bullet.destroy(); const dir=Math.sign(pl.x-bullet.x)||1; pl.takeDamage(1,160*dir,-160); };
-    this.physics.add.overlap(this.player1,this.enemyBullets,hit);
-    this.physics.add.overlap(this.player2,this.enemyBullets,hit);
+   
+    // 👉 on modifie le handler hit pour vérifier la vie des deux joueurs
+    const hit = (pl, bullet) => {
+    bullet.destroy();
+    const dir = Math.sign(pl.x - bullet.x) || 1;
+    pl.takeDamage(1, 160 * dir, -160);
+    if (this.player1.hp <= 0 || this.player2.hp <= 0) {
+        this.goGameOver();
+    }
+    };
+
+    this.physics.add.overlap(this.player1, this.enemyBullets, hit);
+    this.physics.add.overlap(this.player2, this.enemyBullets, hit);
 
     // --- DRONES
     this.drones=[ new Drone(this,300,80), new Drone(this,600,120) ];
@@ -196,5 +215,11 @@ export default class GameSceneMultiMap2 extends Phaser.Scene {
         if(count>=d.req){ d.tryOpen(this.inventory); this.createExitZoneIfOpen(); }
       }
     });
+
+    if (!this._gameOver && (this.player1.hp <= 0 || this.player2.hp <= 0)) {
+    this.goGameOver();
+    }
+
   }
+  
 }

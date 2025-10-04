@@ -53,12 +53,31 @@ export default class GameSceneSoloMap2 extends Phaser.Scene {
     this.physics.add.collider(this.player,this.mur2);
     this.cameras.main.startFollow(this.player,true,0.12,0.12);
 
+    // --- GAME OVER
+    this._gameOver = false;
+    this.goGameOver = () => {
+    if (this._gameOver) return;
+    this._gameOver = true;
+    this.scene.stop('UI');
+    this.scene.start('GameOverScene', { from: this.scene.key });
+    };
+
+
     // --- BULLETS ENNEMIES
     this.enemyBullets=this.physics.add.group({ classType:Phaser.Physics.Arcade.Image, defaultKey:'enemy_bullet', maxSize:50 });
     const killBullet=b=>b.destroy();
     this.physics.add.collider(this.enemyBullets,this.mur, (_b)=>killBullet(_b));
     this.physics.add.collider(this.enemyBullets,this.mur2,(_b)=>killBullet(_b));
-    this.physics.add.overlap(this.player,this.enemyBullets,(pl,bullet)=>{ bullet.destroy(); const dir=Math.sign(pl.x-bullet.x)||1; pl.takeDamage(1,160*dir,-160); });
+
+    this.physics.add.overlap(this.player, this.enemyBullets, (pl, bullet) => {
+    bullet.destroy();
+    const dir = Math.sign(pl.x - bullet.x) || 1;
+    pl.takeDamage(1, 160*dir, -160);
+    if (pl.hp <= 0) this.goGameOver();
+    });
+
+
+    this.physics.add.overlap(this.player,this.enemyBullets,(pl,bullet)=>{ bullet.destroy(); });
 
     // --- DRONES
     this.drones=[ new Drone(this,300,80), new Drone(this,600,120) ];
@@ -139,5 +158,8 @@ export default class GameSceneSoloMap2 extends Phaser.Scene {
         if(count>=d.req){ d.tryOpen(this.inventory); this.createExitZoneIfOpen(); }
       }
     });
+
+    if (!this._gameOver && this.player.hp <= 0) this.goGameOver();
+
   }
 }

@@ -94,7 +94,17 @@ export default class GameSceneMultiMap1 extends Phaser.Scene {
     const killBullet=b=>b.destroy();
     this.physics.add.collider(this.enemyBullets,this.mur, (_b)=>killBullet(_b));
     this.physics.add.collider(this.enemyBullets,this.mur2,(_b)=>killBullet(_b));
-    const hit=(pl,bullet)=>{ bullet.destroy(); const dir=Math.sign(pl.x-bullet.x)||1; pl.takeDamage(1,160*dir,-160); };
+    
+      // 👉 on modifie le handler hit pour vérifier la vie des deux joueurs
+    const hit = (pl, bullet) => {
+    bullet.destroy();
+    const dir = Math.sign(pl.x - bullet.x) || 1;
+    pl.takeDamage(1, 160 * dir, -160);
+    if (this.player1.hp <= 0 || this.player2.hp <= 0) {
+        this.goGameOver();
+    }
+    };
+
     this.physics.add.overlap(this.player1,this.enemyBullets,hit);
     this.physics.add.overlap(this.player2,this.enemyBullets,hit);
 
@@ -184,6 +194,7 @@ export default class GameSceneMultiMap1 extends Phaser.Scene {
       if(plat&&pl.body?.blocked?.down){ pl.x+=plat.body.deltaX(); pl.y+=plat.body.deltaY(); }
       else { pl.setData('platform',null); }
     };
+
     carry(this.player1); carry(this.player2);
 
     const losLayer=this.mur||this.mur2||this.neonsroses||this.grilles||null;
@@ -196,5 +207,10 @@ export default class GameSceneMultiMap1 extends Phaser.Scene {
         if(count>=d.req){ d.tryOpen(this.inventory); this.createExitZoneIfOpen(); }
       }
     });
+
+    if (!this._gameOver && (this.player1.hp <= 0 || this.player2.hp <= 0)) {
+    this.goGameOver();
+    }
+    
   }
 }
