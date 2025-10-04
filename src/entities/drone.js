@@ -18,20 +18,23 @@ export default class Drone extends Phaser.Physics.Arcade.Sprite {
 
   // simple LOS (line of sight) vers la cible (player)
 
-  hasLineOfSight(target, layer) {
-    /*  Raycast discret: on échantillonne la ligne, on stoppe si une tuile collidable est trouvée. sert a determiner si la distance entre le drone
-     ne présente pas de tuiles collidable. si une tuile collidable est présente, le drone ne tire pas */
-    const steps = 16; //on met un point de vérification tout les 16 pixels sur la distance entre le drone et le joueur
-    const dx = (target.x - this.x) / steps; //détermine la distance entre le drone et le joueur en x et y et divise cette distance par le nombre de steps pour savoir a quelle distance on doit vérifier chaque point
-    const dy = (target.y - this.y) / steps;
-    for (let i = 1; i <= steps; i++) {
-      const wx = this.x + dx * i; // wx === on parcourt la distance entre le drone et le joueur en x et y donc a la première itération on est a 1/16 de la distance, a la deuxième a 2/16 etc... en partant de la position du drone et en allant vers la position du joueur
-      const wy = this.y + dy * i;
-      const tile = layer.getTileAtWorldXY(wx, wy, true); // true = retourne null si pas de tuile pour chaques points vérifiés. 1 point vérifier a la première itération, 2 points a la deuxième etc...
-      if (tile && tile.collides) return false; // si on trouve une tuile collidable, on retourne false (pas de LOS)
-    } 
-    return true;
+ hasLineOfSight(target, layer) {
+  // Pas de layer ⇒ considère la vue libre pour éviter un crash
+  if (!layer || typeof layer.getTileAtWorldXY !== 'function') return true;
+
+  const steps = 16;
+  const dx = (target.x - this.x) / steps;
+  const dy = (target.y - this.y) / steps;
+
+  for (let i = 1; i <= steps; i++) {
+    const wx = this.x + dx * i;
+    const wy = this.y + dy * i;
+    const tile = layer.getTileAtWorldXY(wx, wy, true);
+    if (tile && tile.collides) return false;
   }
+  return true;
+}
+
 
   tryShoot(target, now, bullets) {
     /* si le temps du dernier tir est infèrieur au temps de cadence de tir des balles - le cooldown, on ne tire pas, 

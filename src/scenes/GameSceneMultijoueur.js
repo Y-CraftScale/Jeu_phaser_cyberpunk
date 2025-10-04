@@ -219,7 +219,8 @@ export default class GameSceneMultijoueur extends Phaser.Scene {
     carry(this.player1); carry(this.player2);
 
     // Drones (cible J1 par défaut)
-    this.drones?.forEach(d => d.update(this.player1, this.mur, this.enemyBullets));
+    const losLayer = this.mur || this.mur2 || this.neonsroses || this.grilles || null;
+    this.drones?.forEach(d => d.update(this.player1, losLayer, this.enemyBullets));
 
     // Portes
     this.doors?.getChildren().forEach(d=>{
