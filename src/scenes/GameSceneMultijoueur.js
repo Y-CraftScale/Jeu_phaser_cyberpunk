@@ -68,6 +68,16 @@ export default class GameSceneMultijoueur extends Phaser.Scene {
       this.physics.add.collider(p, this.mur2);
     });
 
+    this.scene.launch('UI', {
+      parent: this.scene.key,
+      players: [this.player1, this.player2],
+      inventory: this.inventory
+    });
+    this.scene.bringToTop('UI');
+    this.time.delayedCall(0, () => {
+      [this.player1, this.player2].forEach(p => this.events.emit('player:hp', p, p.hp, p.maxHP));
+    });
+
     // CAMÉRAS SPLIT-SCREEN
     const W = this.scale.width, H = this.scale.height;
     this.cam1 = this.cameras.main;
@@ -83,28 +93,10 @@ export default class GameSceneMultijoueur extends Phaser.Scene {
 
     // Séparateur visuel
     this.splitBar = this.add.rectangle(W/2, 0, 2, H, 0x000000, 0.6).setOrigin(0.5,0).setScrollFactor(0);
-
-    // HUD LOCAUX (pas d’UIScene en multi)
-    this.hud1 = this.add.container(0, 0).setScrollFactor(0).setDepth(1000);
-    this.hud1_hp  = this.add.text(8, 8,  `HP: ${this.player1.hp}/${this.player1.maxHP}`, { fontSize:'12px', backgroundColor:'#000', padding:{x:6,y:4} });
-    this.hud1_inv = this.add.text(8, 28, `Fragments: 0\nKeys: 0`, { fontSize:'12px', backgroundColor:'#000', padding:{x:6,y:4} });
-    this.hud1.add([this.hud1_hp, this.hud1_inv]);
-
-    this.hud2 = this.add.container(Math.floor(W/2), 0).setScrollFactor(0).setDepth(1000);
-    this.hud2_hp  = this.add.text(8, 8,  `HP: ${this.player2.hp}/${this.player2.maxHP}`, { fontSize:'12px', backgroundColor:'#000', padding:{x:6,y:4} });
-    this.hud2_inv = this.add.text(8, 28, `Fragments: 0\nKeys: 0`, { fontSize:'12px', backgroundColor:'#000', padding:{x:6,y:4} });
-    this.hud2.add([this.hud2_hp, this.hud2_inv]);
-
-    // Chaque caméra n'affiche que son HUD
-    this.cam1.ignore(this.hud2);
-    this.cam2.ignore(this.hud1);
-
-    // Resize optionnel
     this.scale.on('resize', (sz)=>{
       const w = sz.width, h = sz.height;
       this.cam1.setViewport(0, 0, Math.floor(w/2), h);
       this.cam2.setViewport(Math.floor(w/2), 0, Math.ceil(w/2), h);
-      this.hud2.setPosition(Math.floor(w/2), 0);
       this.splitBar.setPosition(w/2, 0).setSize(2, h);
     });
 
@@ -189,24 +181,6 @@ export default class GameSceneMultijoueur extends Phaser.Scene {
       this.physics.add.overlap(this.player2, this.exitZone, overlapExit, null, this);
     };
 
-    // MAJ HUD: HP via event et inventaire partagé
-    this.events.on('player:hp', () => {
-      this.hud1_hp.setText(`HP: ${this.player1.hp}/${this.player1.maxHP}`);
-      this.hud2_hp.setText(`HP: ${this.player2.hp}/${this.player2.maxHP}`);
-    });
-
-    const updateInv = () => {
-      const frag = this.inventory?.get?.('doorFragment') ?? 0;
-      const keys = (this.inventory?.get?.('chestKey') ?? 0) + (this.inventory?.get?.('key') ?? 0);
-      const txt = `Fragments: ${frag}\nKeys: ${keys}`;
-      this.hud1_inv.setText(txt);
-      this.hud2_inv.setText(txt);
-    };
-    if (this.inventory?.on) {
-      this.inventory.on('inv:update', updateInv);
-      this.events.once(Phaser.Scenes.Events.SHUTDOWN, ()=> this.inventory?.off?.('inv:update', updateInv));
-    }
-    updateInv();
   }
 
   gotoNextMap() {
@@ -214,10 +188,10 @@ export default class GameSceneMultijoueur extends Phaser.Scene {
     this.input.keyboard.removeAllListeners('keydown-E');
     [this.player1,this.player2].forEach(p=>{ if(p?.body){ p.body.checkCollision.none = true; p.body.enable=false; }});
     if (this.exitZone) this.exitZone.destroy(true);
+    this.scene.stop('UI');
 
-    // Nettoyage split/HUD
+    // Nettoyage split
     if (this.cam2) this.cameras.remove(this.cam2);
-    this.hud1?.destroy(true); this.hud2?.destroy(true);
     this.splitBar?.destroy(true);
 
     const next = { mapKey:this.nextMapKey, nextMapKey:null, startX:64, startY:64, inventory:this.inventory };

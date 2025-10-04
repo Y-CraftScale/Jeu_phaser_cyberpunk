@@ -85,7 +85,7 @@ export default class GameSceneSolo extends Phaser.Scene {
     });
     this.scene.bringToTop('UI');
     // ping après abonnement
-    this.time.delayedCall(0, () => this.events.emit('player:hp', this.player.hp, this.player.maxHP));
+    this.time.delayedCall(0, () => this.events.emit('player:hp', this.player, this.player.hp, this.player.maxHP));
 
         // ASCENSEURS
     const P = o => Object.fromEntries((o.properties||[]).map(p=>[p.name,p.value]));
@@ -162,12 +162,6 @@ export default class GameSceneSolo extends Phaser.Scene {
     }
     this.time.delayedCall(0, ()=> this.scene.start('GameSceneSolo', next));
 
-    // GameSceneSolo.create()
-    this.scene.launch('UI', {
-    parent: this.scene.key,          // "GameSceneSolo"
-    players: [this.player],
-    inventory: this.inventory
-    });
 
   }
 
@@ -194,3 +188,4 @@ export default class GameSceneSolo extends Phaser.Scene {
     });
   }
 }
+

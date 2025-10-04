@@ -11,49 +11,76 @@ export default class UIScene extends Phaser.Scene {
   create() {
     const { width } = this.scale;
 
-    // Récup scène parente si besoin d’events
+    // Recup scene parente si besoin d'evenements
     this.parent = this.parentKey ? this.scene.get(this.parentKey) : null;
 
-    // Sélection du joueur principal pour l’affichage HP
-    this.player = this.players[0] || null;
+    const baseStyle = { fontSize: '12px', backgroundColor: '#000', padding: { x: 6, y: 4 } };
 
-    // HUD HP
-    this.hpText = this.add.text(8, 8, 'HP: --', {
-      fontSize: '12px', backgroundColor: '#000', padding: { x: 6, y: 4 }
-    }).setScrollFactor(0).setDepth(1000);
+    // Texte HP par joueur (fallback si aucun joueur)
+    this.hpEntries = this.players.map((player, idx) => {
+      const label = this.players.length > 1 ? `P${idx + 1} HP` : 'HP';
+      const text = this.add.text(8, 8 + idx * 20, label, baseStyle)
+        .setScrollFactor(0)
+        .setDepth(1000);
+      return { player, label, text };
+    });
+    if (!this.hpEntries.length) {
+      const text = this.add.text(8, 8, 'HP: --', baseStyle)
+        .setScrollFactor(0)
+        .setDepth(1000);
+      this.hpEntries.push({ player: null, label: 'HP', text });
+    }
 
-    if (this.player) this.hpText.setText(`HP: ${this.player.hp}/${this.player.maxHP || '?'}`);
+    const formatLine = (entry, hp = entry.player?.hp, max = entry.player?.maxHP) => {
+      const val = (v, fallback = '--') => (v ?? fallback);
+      entry.text.setText(`${entry.label}: ${val(hp)}/${val(max)}`);
+    };
+    const renderHPAll = () => this.hpEntries.forEach(entry => formatLine(entry));
+    renderHPAll();
 
-    // Écoute les MAJ HP si la parent émet l’événement
     if (this.parent?.events) {
-      const onHp = (hp, max) => this.hpText.setText(`HP: ${hp}/${max}`);
+      const onHp = (arg1, arg2, arg3) => {
+        const playerLike = arg1 && typeof arg1 === 'object' && 'hp' in arg1;
+        if (playerLike) {
+          const player = arg1;
+          const hp = arg2 ?? player.hp;
+          const max = arg3 ?? player.maxHP;
+          const entry = this.hpEntries.find(e => e.player === player);
+          if (entry) {
+            formatLine(entry, hp, max);
+            return;
+          }
+        }
+        // retrocompatibilite : signature (hp, max)
+        const hp = playerLike ? arg2 : arg1;
+        const max = playerLike ? arg3 : arg2;
+        if (this.hpEntries.length === 1) {
+          formatLine(this.hpEntries[0], hp, max);
+        } else {
+          renderHPAll();
+        }
+      };
       this.parent.events.on('player:hp', onHp, this);
       this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
         this.parent?.events?.off('player:hp', onHp, this);
       });
     }
 
-    // HUD inventaire
-    this.invText = this.add.text(8, 28, 'Fragments: 0\nKeys: 0', {
-      fontSize: '12px', backgroundColor: '#000', padding: { x: 6, y: 4 }
-    }).setScrollFactor(0).setDepth(1000);
+    const invY = 8 + this.hpEntries.length * 20 + 4;
+    this.invText = this.add.text(8, invY, 'Fragments: 0\nKeys: 0', baseStyle)
+      .setScrollFactor(0)
+      .setDepth(1000);
 
-    // ---- FONCTION DE MISE À JOUR INVENTAIRE ----
     const renderInv = () => {
-      // Valeurs principales
       const frag = this.inventory?.get?.('doorFragment') ?? 0;
       const keys = (this.inventory?.get?.('chestKey') ?? 0) + (this.inventory?.get?.('key') ?? 0);
-
-      // Si InventoryManager expose entries() ou toJSON() => debug
       const dump = this.inventory?.entries?.() ?? [];
       const extra = dump.length
         ? '\n' + dump.map(([k, v]) => `${k}: ${v}`).join('\n')
         : '';
-
       this.invText.setText(`Fragments: ${frag}\nKeys: ${keys}${extra}`);
     };
 
-    // Abonnement si InventoryManager émet des events
     let bound = false;
     if (this.inventory && typeof this.inventory.on === 'function') {
       this.inventory.on('inv:update', renderInv);
@@ -62,20 +89,16 @@ export default class UIScene extends Phaser.Scene {
         this.inventory?.off?.('inv:update', renderInv);
       });
     }
-
-    // Fallback polling si pas d’EventEmitter
     if (!bound) {
       this.time.addEvent({ delay: 200, loop: true, callback: renderInv });
     }
-
-    // Init immédiate
     renderInv();
 
-    // Option: afficher tag 2P si mode multijoueur
     if (this.players.length > 1) {
-      this.add.text(width - 8, 8, '2P', {
-        fontSize: '12px', backgroundColor: '#000', padding: { x: 6, y: 4 }
-      }).setOrigin(1, 0).setScrollFactor(0).setDepth(1000);
+      this.add.text(width - 8, 8, '2P', baseStyle)
+        .setOrigin(1, 0)
+        .setScrollFactor(0)
+        .setDepth(1000);
     }
   }
 }
