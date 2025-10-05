@@ -157,6 +157,32 @@ export default class GameSceneSoloMap1 extends Phaser.Scene {
     this.scene.bringToTop('UI');
     this.time.delayedCall(0,()=>this.events.emit('player:hp',this.player,this.player.maxHP));
 
+
+// === TIMER SIMPLE ===
+this.timeLeft = 90;                          
+const ui = this.scene.get('UI');
+ui.showTimer('01:30');                       
+
+// tick 1s
+this.timerEvt = this.time.addEvent({
+  delay: 1000, loop: true, callback: () => {
+    if (this._leaving || this._gameOver) return;
+    this.timeLeft = Math.max(0, this.timeLeft - 1);
+    ui.updateTimer(this.timeLeft);
+    if (this.timeLeft === 0) {
+      this.timerEvt.remove(false);
+      this.goGameOver?.();
+    }
+  }
+});
+
+// nettoyage
+this.events.once('shutdown', () => { this.timerEvt?.remove(false); ui.hideTimer(); });
+this.events.once('destroy',  () => { this.timerEvt?.remove(false); ui.hideTimer(); });
+
+
+
+
     // --- ASCENSEURS / LOGIC / PORTES (inchangé)
     const P=o=>Object.fromEntries((o.properties||[]).map(p=>[p.name,p.value]));
     this.elevators=this.physics.add.group({ allowGravity:false, immovable:true });

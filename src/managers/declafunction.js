@@ -10,7 +10,7 @@ export default class DeclaFunction {
     btn.on('pointerdown', () => { 
 
         btn.setTint(0xdddddd); 
-        if (scene.sound) scene.sound.play('bouton_click', { volume: 0.5 });  // 👈 son bouton
+        if (scene.sound) scene.sound.play('bouton_click', { volume: 0.5 });  
         onClick && onClick();     
     });
 

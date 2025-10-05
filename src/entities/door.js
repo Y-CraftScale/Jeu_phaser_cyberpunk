@@ -28,11 +28,11 @@ export default class Door extends Phaser.Physics.Arcade.Sprite {
   updateProgress(count) {
     if (this.opened) return;
     const need = Math.max(0, this.req);
-    const c = Math.max(0, Math.min(count, Math.max(0, need - 1))); // 0..req-1
+    const c = Math.max(0, Math.min(count, Math.max(0, need - 1))); 
     if (c === 0) { this.setFrame(this.frameClosed); return; }
     const maxProg = Math.max(0, this.progressCount - 1);
     const progIdx = Math.min(c - 1, maxProg);
-    this.setFrame(this.progressBase + progIdx); // jamais frameOpen ici
+    this.setFrame(this.progressBase + progIdx); 
   }
 
   // Ouverture réelle

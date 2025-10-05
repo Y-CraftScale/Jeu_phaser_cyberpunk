@@ -28,7 +28,7 @@ export default class Elevator extends Phaser.Physics.Arcade.Sprite {
     // collision par le dessus uniquement
     pbody.checkCollision.up = true;
     pbody.checkCollision.down = pbody.checkCollision.left = pbody.checkCollision.right = false;
-    this.platform.setData('owner', this); // lien retour si besoin
+    this.platform.setData('owner', this);
 
     // mouvement
     this.topY    = props.topY ?? this.y - 150;
@@ -38,7 +38,7 @@ export default class Elevator extends Phaser.Physics.Arcade.Sprite {
 
     const duration = Math.abs(this.bottomY - this.topY) / speed * 1000;
 
-    // on anime l'image ET la plateforme
+    // anime l'image ET la plateforme
     this.tween = scene.tweens.add({
       targets: [this, this.platform],
       y: this.topY,

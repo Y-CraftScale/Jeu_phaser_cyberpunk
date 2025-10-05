@@ -11,7 +11,6 @@ import GameSceneMultiMap2 from './scenes/GameSceneMultiMap2.js';
 const config = {
     type: Phaser.AUTO,
 
-    // Pour un jeu qui s'adapte à la taille de la fenêtre
     scale: {
     mode: Phaser.Scale.RESIZE,  // s'adapte quand la fenêtre change de taille
     autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -23,7 +22,7 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 600 },
-            debug: true // Mettez 'false' pour la version finale
+            debug: false
         }
     },
     scene: [PreloaderScene, MainMenu, GameSceneSoloMap1, GameSceneSoloMap2 , GameSceneMultiMap1 , GameSceneMultiMap2 ,UIScene, GameOverScene]
