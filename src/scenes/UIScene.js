@@ -3,61 +3,69 @@ export default class UIScene extends Phaser.Scene {
   constructor() { super('UI'); }
 
   init(data) {
-    this.parentKey = data?.parent || null;           // "GameSceneSolo" ou "GameSceneMultijoueur"
+    this.parentKey = data?.parent || null;           // ex: 'GameSceneSoloMap1'
     this.players   = data?.players || [];            // [player] ou [player1, player2]
     this.inventory = data?.inventory || null;        // InventoryManager
   }
 
   create() {
     const { width } = this.scale;
-
-    // Recup scene parente si besoin d'evenements
     this.parent = this.parentKey ? this.scene.get(this.parentKey) : null;
 
-    const baseStyle = { fontSize: '12px', backgroundColor: '#000', padding: { x: 6, y: 4 } };
+    // ---- BARRES DE VIE (spritesheets)
+    // Hypothèse : spritesheets déjà préchargées :
+    //  - 'ui_hp_p1' et 'ui_hp_p2' (10 frames ; frame 0 = pleine, frame 9 = vide)
+    const MAX_HP = 10;
 
-    // Texte HP par joueur (fallback si aucun joueur)
-    this.hpEntries = this.players.map((player, idx) => {
-      const label = this.players.length > 1 ? `P${idx + 1} HP` : 'HP';
-      const text = this.add.text(8, 8 + idx * 20, label, baseStyle)
-        .setScrollFactor(0)
-        .setDepth(1000);
-      return { player, label, text };
-    });
-    if (!this.hpEntries.length) {
-      const text = this.add.text(8, 8, 'HP: --', baseStyle)
-        .setScrollFactor(0)
-        .setDepth(1000);
-      this.hpEntries.push({ player: null, label: 'HP', text });
-    }
+    const makeHpBar = (player, idx) => {
+      const isP2 = idx === 1;
+      const key  = isP2 ? 'life_bar1' : 'life_bar1';
+      const x    = isP2 ? (width - 12) : 12;
+      const y    = 10;
 
-    const formatLine = (entry, hp = entry.player?.hp, max = entry.player?.maxHP) => {
-      const val = (v, fallback = '--') => (v ?? fallback);
-      entry.text.setText(`${entry.label}: ${val(hp)}/${val(max)}`);
+      const img = this.add.image(x, y, key, 0)
+        .setOrigin(isP2 ? 1 : 0, 0)
+        .setScrollFactor(0)
+        .setDepth(1000)
+        .setScale(0.9);
+
+      const update = (hp, max = MAX_HP) => {
+        const clamped = Phaser.Math.Clamp(hp ?? 0, 0, max);
+        const frameIndex = max - clamped; // 0 = plein, max = vide
+        img.setFrame(frameIndex);
+      };
+
+      update(player?.hp ?? MAX_HP, player?.maxHP ?? MAX_HP);
+      return { player, img, update, isP2 };
     };
-    const renderHPAll = () => this.hpEntries.forEach(entry => formatLine(entry));
-    renderHPAll();
 
+    this.hpBars = (this.players.length ? this.players : [null]).map((p, i) => makeHpBar(p, i));
+
+    // Reposition sur resize
+    this.scale.on('resize', (sz) => {
+      const w = sz.width;
+      this.hpBars?.forEach(b => {
+        b.img.setX(b.isP2 ? (w - 12) : 12);
+      });
+      this.invText?.setPosition(12, 10 + this.hpBars.length * 36 + 4);
+      this.p2Tag?.setPosition(w - 8, 8);
+    });
+
+    // ---- MISE À JOUR HP depuis la scène parente
     if (this.parent?.events) {
       const onHp = (arg1, arg2, arg3) => {
-        const playerLike = arg1 && typeof arg1 === 'object' && 'hp' in arg1;
-        if (playerLike) {
-          const player = arg1;
-          const hp = arg2 ?? player.hp;
-          const max = arg3 ?? player.maxHP;
-          const entry = this.hpEntries.find(e => e.player === player);
-          if (entry) {
-            formatLine(entry, hp, max);
-            return;
-          }
-        }
-        // retrocompatibilite : signature (hp, max)
-        const hp = playerLike ? arg2 : arg1;
-        const max = playerLike ? arg3 : arg2;
-        if (this.hpEntries.length === 1) {
-          formatLine(this.hpEntries[0], hp, max);
+        // Supporte deux signatures :
+        //  1) (player, hp, max)
+        //  2) (hp, max) quand il n'y a qu'un joueur
+        if (arg1 && typeof arg1 === 'object' && 'hp' in arg1) {
+          const pl  = arg1;
+          const hp  = arg2 ?? pl.hp;
+          const max = arg3 ?? pl.maxHP ?? MAX_HP;
+          this.hpBars.find(b => b.player === pl)?.update(hp, max);
         } else {
-          renderHPAll();
+          const hp  = arg1;
+          const max = arg2 ?? MAX_HP;
+          this.hpBars[0]?.update(hp, max);
         }
       };
       this.parent.events.on('player:hp', onHp, this);
@@ -66,36 +74,31 @@ export default class UIScene extends Phaser.Scene {
       });
     }
 
-    const invY = 8 + this.hpEntries.length * 20 + 4;
-    this.invText = this.add.text(8, invY, 'Fragments: 0\nKeys: 0', baseStyle)
+    // ---- INVENTAIRE (texte compact)
+    const baseStyle = { fontSize: '12px', backgroundColor: '#000', padding: { x: 6, y: 4 } };
+    const invY = 10 + this.hpBars.length * 36 + 4;
+
+    this.invText = this.add.text(12, invY, 'Fragments: 0\nKeys: 0', baseStyle)
       .setScrollFactor(0)
       .setDepth(1000);
 
     const renderInv = () => {
       const frag = this.inventory?.get?.('doorFragment') ?? 0;
       const keys = (this.inventory?.get?.('chestKey') ?? 0) + (this.inventory?.get?.('key') ?? 0);
-      const dump = this.inventory?.entries?.() ?? [];
-      const extra = dump.length
-        ? '\n' + dump.map(([k, v]) => `${k}: ${v}`).join('\n')
-        : '';
-      this.invText.setText(`Fragments: ${frag}\nKeys: ${keys}${extra}`);
+      this.invText.setText(`Fragments: ${frag}\nKeys: ${keys}`);
     };
 
-    let bound = false;
-    if (this.inventory && typeof this.inventory.on === 'function') {
+    if (this.inventory?.on) {
       this.inventory.on('inv:update', renderInv);
-      bound = true;
       this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
         this.inventory?.off?.('inv:update', renderInv);
       });
     }
-    if (!bound) {
-      this.time.addEvent({ delay: 200, loop: true, callback: renderInv });
-    }
     renderInv();
 
+    // Tag 2P si multi
     if (this.players.length > 1) {
-      this.add.text(width - 8, 8, '2P', baseStyle)
+      this.p2Tag = this.add.text(width - 8, 8, '2P', baseStyle)
         .setOrigin(1, 0)
         .setScrollFactor(0)
         .setDepth(1000);

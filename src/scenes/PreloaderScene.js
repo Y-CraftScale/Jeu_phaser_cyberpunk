@@ -52,6 +52,10 @@ export default class PreloaderScene extends Phaser.Scene {
     this.load.audio('game', 'assets/audio/game.mp3');
     this.load.audio('bouton_click', 'assets/audio/bouton_click.mp3');
 
+    //ui
+    this.load.spritesheet('life_bar1', 'assets/images/sprite_life_bar1.png',
+      { frameWidth: 166.7, frameHeight: 50, margin: 0, spacing: 0 }
+    );
   }
 
   create() {

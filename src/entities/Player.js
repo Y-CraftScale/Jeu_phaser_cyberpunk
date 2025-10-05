@@ -23,7 +23,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this._wasOnFloor = false;
 
     // HP si deja utilise par ton UI
-    this.maxHP = 5;
+    this.maxHP = 10;
     this.hp = this.maxHP;
   }
 
