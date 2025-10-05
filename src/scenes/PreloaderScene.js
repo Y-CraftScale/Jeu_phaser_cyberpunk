@@ -56,6 +56,10 @@ export default class PreloaderScene extends Phaser.Scene {
     this.load.spritesheet('life_bar1', 'assets/images/sprite_life_bar1.png',
       { frameWidth: 166.7, frameHeight: 50, margin: 0, spacing: 0 }
     );
+    this.load.spritesheet('life_bar_drone', 'assets/images/sprite_life_bar.png',
+      { frameWidth: 106.25, frameHeight: 32, margin: 0, spacing: 0 }
+    );
+
   }
 
   create() {
