@@ -12,6 +12,7 @@ export default class PreloaderScene extends Phaser.Scene {
     this.load.image('bg_city', 'assets/images/background_city.png');
     this.load.image('bg_city2', 'assets/images/bg_city2.png');
     this.load.image('bg_map2', 'assets/images/bg_map2.png');
+    this.load.image('menu_bg', 'assets/images/menu_bg.png');
 
     // perso
     this.load.spritesheet('player', 'assets/images/spritesheet_perso_principal/spritesheet_perso_principal_course.png',
