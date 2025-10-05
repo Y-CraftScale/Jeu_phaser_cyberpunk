@@ -3,9 +3,9 @@ export default class UIScene extends Phaser.Scene {
   constructor() { super('UI'); }
 
   init(data) {
-    this.parentKey = data?.parent || null;           // ex: 'GameSceneSoloMap1'
-    this.players   = data?.players || [];            // [player] ou [player1, player2]
-    this.inventory = data?.inventory || null;        // InventoryManager
+    this.parentKey = data?.parent || null;           
+    this.players   = data?.players || [];            
+    this.inventory = data?.inventory || null;        
   }
 
   create() {
@@ -13,8 +13,7 @@ export default class UIScene extends Phaser.Scene {
     this.parent = this.parentKey ? this.scene.get(this.parentKey) : null;
 
     // ---- BARRES DE VIE (spritesheets)
-    // Hypothèse : spritesheets déjà préchargées :
-    //  - 'ui_hp_p1' et 'ui_hp_p2' (10 frames ; frame 0 = pleine, frame 9 = vide)
+
     const MAX_HP = 10;
 
     const makeHpBar = (player, idx) => {
@@ -54,7 +53,6 @@ export default class UIScene extends Phaser.Scene {
     // ---- MISE À JOUR HP depuis la scène parente
     if (this.parent?.events) {
       const onHp = (arg1, arg2, arg3) => {
-        // Supporte deux signatures :
         //  1) (player, hp, max)
         //  2) (hp, max) quand il n'y a qu'un joueur
         if (arg1 && typeof arg1 === 'object' && 'hp' in arg1) {
@@ -103,5 +101,23 @@ export default class UIScene extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(1000);
     }
+  }
+
+  showTimer(initial='00:00'){
+    if (this.timerText) return;
+    const style = { fontFamily:'monospace', fontSize:'24px', color:'#fff', stroke:'#000', strokeThickness:4 };
+    this.timerText = this.add.text(this.scale.width/2, 20, initial, style)
+      .setOrigin(0.5,0).setScrollFactor(0).setDepth(10000);
+  }
+
+  updateTimer(seconds){
+    const s = Math.max(0, seconds|0);
+    const m = Math.floor(s/60), r = s%60;
+    this.timerText?.setText(`${m.toString().padStart(2,'0')}:${r.toString().padStart(2,'0')}`);
+  }
+
+  hideTimer(){
+    this.timerText?.destroy();
+    this.timerText = null;
   }
 }

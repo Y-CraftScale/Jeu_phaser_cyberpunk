@@ -63,13 +63,13 @@ export default class GameSceneMultiMap2 extends Phaser.Scene {
       right:this.input.keyboard.addKey(K.D),
       jump:this.input.keyboard.addKey(K.SPACE),
       jumpAlt:this.input.keyboard.addKey(K.Z),
-      shoot:this.input.keyboard.addKey(K.C)     // P1 tire C
+      shoot:this.input.keyboard.addKey(K.C)     
     };
     const p2c = {
       left:this.input.keyboard.addKey(K.K),
       right:this.input.keyboard.addKey(K.M),
       jump:this.input.keyboard.addKey(K.O),
-      shoot:this.input.keyboard.addKey(K.J)     // P2 tire J
+      shoot:this.input.keyboard.addKey(K.J)     
     };
     this.keyE = this.input.keyboard.addKey(K.E);
 
@@ -98,6 +98,29 @@ export default class GameSceneMultiMap2 extends Phaser.Scene {
     this.scene.bringToTop('UI');
     this.time.delayedCall(0,()=>[this.player1,this.player2].forEach(p=>this.events.emit('player:hp',p,p.hp,p.maxHP)));
 
+    // === TIMER SIMPLE ===
+    this.timeLeft = 90;                         
+    const ui = this.scene.get('UI');
+    ui.showTimer('01:30');                        
+
+    // tick 1s
+    this.timerEvt = this.time.addEvent({
+    delay: 1000, loop: true, callback: () => {
+        if (this._leaving || this._gameOver) return;
+        this.timeLeft = Math.max(0, this.timeLeft - 1);
+        ui.updateTimer(this.timeLeft);
+        if (this.timeLeft === 0) {
+        this.timerEvt.remove(false);
+        this.goGameOver?.();
+        }
+    }
+    });
+
+    // nettoyage
+    this.events.once('shutdown', () => { this.timerEvt?.remove(false); ui.hideTimer(); });
+    this.events.once('destroy',  () => { this.timerEvt?.remove(false); ui.hideTimer(); });
+
+
     // SPLIT CAMS
     const W=this.scale.width,H=this.scale.height;
     this.cam1=this.cameras.main;
@@ -115,7 +138,7 @@ export default class GameSceneMultiMap2 extends Phaser.Scene {
     // BALLES JOUEUR partagées
     this.playerBullets=this.physics.add.group({
       classType:Phaser.Physics.Arcade.Image,
-      defaultKey:'enemy_bullet', // mets 'player_bullet' si dispo
+      defaultKey:'enemy_bullet', 
       maxSize:80,
       createCallback:(b)=>{
         b.body.setAllowGravity(false);

@@ -8,7 +8,7 @@ export default class GameOverScene extends Phaser.Scene {
   }
 
    preload() {
-    // Place tes PNG ici (change les chemins si besoin)
+  
     this.load.image('bg_gameover',   'assets/images/bg_gameover.jpeg');
     this.load.image('btn_rejouer',  'assets/images/btn_rejouer_cyber.png');
     this.load.image('btn_quitter', 'assets/images/btn_quitter_cyber.png');
@@ -25,7 +25,6 @@ export default class GameOverScene extends Phaser.Scene {
     DeclaFunction.createImgBtn(this, width/2 - 500, height/2, 'btn_quitter', 0.2, ()=> this.scene.start('MainMenu'));
 
     // --- MUSIQUE DE GAME OVER
-    // 🔊 Joue le son de mort UNE SEULE FOIS ici
     this.sound.play('dead_effect', { volume: 0.5 });
 
   }

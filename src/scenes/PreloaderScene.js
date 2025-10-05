@@ -41,10 +41,10 @@ export default class PreloaderScene extends Phaser.Scene {
     );
 
     //key
-    this.load.image('key', 'assets/images/key.png'); // ou spritesheet si besoin
+    this.load.image('key', 'assets/images/key.png'); 
     
     //fragments
-    this.load.image('fragment', 'assets/images/fragment.png'); // ou spritesheet si besoin
+    this.load.image('fragment', 'assets/images/fragment.png'); 
 
     //songs
     this.load.audio('roblox_loby', 'assets/audio/roblox_loby.mp3');
@@ -73,17 +73,16 @@ this.anims.create({
 });
 this.anims.create({
   key: 'player_run',
-  frames: this.anims.generateFrameNumbers('player', { start: 1, end: 6 }), // ajuste au besoin
+  frames: this.anims.generateFrameNumbers('player', { start: 1, end: 6 }), 
   frameRate: 10,
   repeat: -1
 });
 this.anims.create({
   key: 'player_jump',
-  frames: [{ key: 'player', frame: 7 }], // ajuste
+  frames: [{ key: 'player', frame: 7 }], 
   frameRate: 1
 });
 
-// Si 'player2' a sa propre spritesheet:
 this.anims.create({ key: 'player2_idle', frames: this.anims.generateFrameNumbers('player2', { start: 0, end: 0 }), frameRate: 1, repeat: -1 });
 this.anims.create({ key: 'player2_run',  frames: this.anims.generateFrameNumbers('player2', { start: 1, end: 6 }), frameRate: 10, repeat: -1 });
 this.anims.create({ key: 'player2_jump', frames: [{ key: 'player2', frame: 7 }], frameRate: 1 });

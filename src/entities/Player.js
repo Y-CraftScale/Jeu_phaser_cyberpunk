@@ -13,7 +13,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumpSpeed = opts.jumpSpeed ?? 380;
 
      // Animations: prefixe = cle texture par defaut
-    this.animPrefix = opts.animPrefix ?? this.texture.key; // ex: 'player' ou 'player2'
+    this.animPrefix = opts.animPrefix ?? this.texture.key;
 
     // Controles injectes par la scene
     this.controls = opts.controls || {};
@@ -22,7 +22,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this._canDouble = false;
     this._wasOnFloor = false;
 
-    // HP si deja utilise par ton UI
+    // Santé
     this.maxHP = 10;
     this.hp = this.maxHP;
   }
