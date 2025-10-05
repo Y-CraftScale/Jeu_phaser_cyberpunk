@@ -2,6 +2,8 @@ export default class PreloaderScene extends Phaser.Scene {
   constructor() { super('Preloader'); }
 
   preload() {
+
+    
     // tileset + carte
     this.load.image('tilesetv1', 'assets/images/tileset_v1.png');
     this.load.image('tilesetv2', 'assets/images/tileset_v2.png');
@@ -12,7 +14,6 @@ export default class PreloaderScene extends Phaser.Scene {
     this.load.image('bg_city', 'assets/images/background_city.png');
     this.load.image('bg_city2', 'assets/images/bg_city2.png');
     this.load.image('bg_map2', 'assets/images/bg_map2.png');
-    this.load.image('menu_bg', 'assets/images/menu_bg.png');
 
     // perso
     this.load.spritesheet('player', 'assets/images/spritesheet_perso_principal/spritesheet_perso_principal_course.png',
@@ -45,9 +46,15 @@ export default class PreloaderScene extends Phaser.Scene {
     //fragments
     this.load.image('fragment', 'assets/images/fragment.png'); // ou spritesheet si besoin
 
+    //songs
+    this.load.audio('roblox_loby', 'assets/audio/roblox_loby.mp3');
+    this.load.audio('dead_effect', 'assets/audio/dead_effect.mp3');
+    this.load.audio('game', 'assets/audio/game.mp3');
+    this.load.audio('bouton_click', 'assets/audio/bouton_click.mp3');
+
   }
 
-  create() {this.scene.start('MainMenu')
+  create() {
 
     // PreloaderScene.create()
 this.anims.create({
@@ -73,6 +80,7 @@ this.anims.create({ key: 'player2_idle', frames: this.anims.generateFrameNumbers
 this.anims.create({ key: 'player2_run',  frames: this.anims.generateFrameNumbers('player2', { start: 1, end: 6 }), frameRate: 10, repeat: -1 });
 this.anims.create({ key: 'player2_jump', frames: [{ key: 'player2', frame: 7 }], frameRate: 1 });
 
+this.scene.start('MainMenu')
   }
 
 }

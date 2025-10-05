@@ -52,6 +52,10 @@ export default class GameSceneMultiMap2 extends Phaser.Scene {
     this.addRepeatingBg({ key:'bg_map2', worldWidth: ww, depth:-10, scrollFactor:0.15 });
     this.addRepeatingBg({ key:'bg_city',  worldWidth: ww, depth:-30, scrollFactor:0.25 });
 
+    // --- MUSIQUE DE JEU
+    this.gameMusic = this.sound.add('game', { loop: true, volume: 0.4 });
+    this.gameMusic.play();
+
     // --- INPUT
     const K=Phaser.Input.Keyboard.KeyCodes;
     const p1c = { left:this.input.keyboard.addKey(K.Q), right:this.input.keyboard.addKey(K.D), jump:this.input.keyboard.addKey(K.SPACE), jumpAlt:this.input.keyboard.addKey(K.Z) };
@@ -68,14 +72,17 @@ export default class GameSceneMultiMap2 extends Phaser.Scene {
       this.physics.add.collider(p,this.mur2);
     });
 
-    // --- GAME OVER
-    this._gameOver = false;
-    this.goGameOver = () => {
+       // --- GAME OVER
+  this._gameOver = false;
+  this.goGameOver = () => {
     if (this._gameOver) return;
     this._gameOver = true;
+
+    if (this.gameMusic) this.gameMusic.stop(); // 🔇 stop la musique du jeu
+
     this.scene.stop('UI');
     this.scene.start('GameOverScene', { from: this.scene.key });
-    };
+  };
 
     // --- UI
     this.scene.launch('UI',{ parent:this.scene.key, players:[this.player1,this.player2], inventory:this.inventory });

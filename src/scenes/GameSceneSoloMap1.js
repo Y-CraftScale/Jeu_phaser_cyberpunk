@@ -36,10 +36,15 @@ export default class GameSceneSoloMap1 extends Phaser.Scene {
     this.physics.world.setBounds(0,0,map.widthInPixels,map.heightInPixels);
     this.cameras.main.setBounds(0,0,map.widthInPixels,map.heightInPixels).setZoom(1.5);
 
+    
     // Parallax (si assets présents)
     const ww=map.widthInPixels;
     this.addRepeatingBg({ key:'bg_city2', worldWidth:ww, depth:-10, scrollFactor:0.15 });
     this.addRepeatingBg({ key:'bg_city',  worldWidth:ww, depth:-30, scrollFactor:0.25 });
+
+    // --- MUSIQUE DE JEU
+    this.gameMusic = this.sound.add('game', { loop: true, volume: 0.4 });
+    this.gameMusic.play();
 
     // --- INPUT
     const K=Phaser.Input.Keyboard.KeyCodes;
@@ -53,14 +58,18 @@ export default class GameSceneSoloMap1 extends Phaser.Scene {
     this.physics.add.collider(this.player,this.mur2);
     this.cameras.main.startFollow(this.player,true,0.12,0.12);
 
-    // --- GAME OVER
-    this._gameOver = false;
-    this.goGameOver = () => {
-      if (this._gameOver) return;
-      this._gameOver = true;
-      this.scene.stop('UI');
-      this.scene.start('GameOverScene', { from: this.scene.key });
-    };
+   // --- GAME OVER
+  this._gameOver = false;
+  this.goGameOver = () => {
+    if (this._gameOver) return;
+    this._gameOver = true;
+
+    if (this.gameMusic) this.gameMusic.stop(); // 🔇 stop la musique du jeu
+
+    this.scene.stop('UI');
+    this.scene.start('GameOverScene', { from: this.scene.key });
+  };
+
 
     // --- BULLETS ENNEMIES
     this.enemyBullets=this.physics.add.group({ classType:Phaser.Physics.Arcade.Image, defaultKey:'enemy_bullet', maxSize:50 });

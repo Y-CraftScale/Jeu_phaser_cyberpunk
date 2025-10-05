@@ -41,6 +41,10 @@ export default class GameSceneSoloMap2 extends Phaser.Scene {
     this.addRepeatingBg({ key:'bg_city2', worldWidth:ww, depth:-10, scrollFactor:0.15 });
     this.addRepeatingBg({ key:'bg_city',  worldWidth:ww, depth:-30, scrollFactor:0.25 });
 
+    // --- MUSIQUE DE JEU
+    this.gameMusic = this.sound.add('game', { loop: true, volume: 0.4 });
+    this.gameMusic.play();
+
     // --- INPUT
     const K=Phaser.Input.Keyboard.KeyCodes;
     const controls={ left:this.input.keyboard.addKey(K.Q), right:this.input.keyboard.addKey(K.D), jump:this.input.keyboard.addKey(K.SPACE), jumpAlt:this.input.keyboard.addKey(K.Z) };
@@ -53,14 +57,17 @@ export default class GameSceneSoloMap2 extends Phaser.Scene {
     this.physics.add.collider(this.player,this.mur2);
     this.cameras.main.startFollow(this.player,true,0.12,0.12);
 
-    // --- GAME OVER
-    this._gameOver = false;
-    this.goGameOver = () => {
+   // --- GAME OVER
+  this._gameOver = false;
+  this.goGameOver = () => {
     if (this._gameOver) return;
     this._gameOver = true;
+
+    if (this.gameMusic) this.gameMusic.stop(); // 🔇 stop la musique du jeu
+
     this.scene.stop('UI');
     this.scene.start('GameOverScene', { from: this.scene.key });
-    };
+  };
 
 
     // --- BULLETS ENNEMIES
@@ -89,7 +96,7 @@ export default class GameSceneSoloMap2 extends Phaser.Scene {
             new Drone(this,2000,200) 
         
         ];
-        
+
     this.drones.forEach(d=>{ this.physics.add.collider(d,this.mur); this.physics.add.collider(d,this.mur2); });
 
     // --- UI
