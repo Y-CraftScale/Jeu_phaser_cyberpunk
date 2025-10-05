@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tileset version="1.10" tiledversion="1.11.2" name="tilesetv1" tilewidth="32" tileheight="32" tilecount="1024" columns="32">
- <image source="../../../../iut cours/programmation iut/jeu_phaser2/assets/images/tileset_v1.png" width="1024" height="1024"/>
+ <image source="tileset_v1.png" width="1024" height="1024"/>
  <tile id="298" type="neonsroses">
   <properties>
    <property name="collides" type="bool" value="true"/>

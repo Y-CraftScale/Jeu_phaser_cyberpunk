@@ -1,23 +1,107 @@
+// src/scenes/UIScene.js
 export default class UIScene extends Phaser.Scene {
   constructor() { super('UI'); }
 
+  init(data) {
+    this.parentKey = data?.parent || null;           // ex: 'GameSceneSoloMap1'
+    this.players   = data?.players || [];            // [player] ou [player1, player2]
+    this.inventory = data?.inventory || null;        // InventoryManager
+  }
+
   create() {
-  this.hpText = this.add.text(8, 8, 'HP: --', {
-      fontSize: '12px', backgroundColor: '#000', padding: { x: 6, y: 4 }
-    }).setScrollFactor(0).setDepth(1000);
+    const { width } = this.scale;
+    this.parent = this.parentKey ? this.scene.get(this.parentKey) : null;
 
-    const game = this.scene.get('Game');
+    // ---- BARRES DE VIE (spritesheets)
+    // Hypothèse : spritesheets déjà préchargées :
+    //  - 'ui_hp_p1' et 'ui_hp_p2' (10 frames ; frame 0 = pleine, frame 9 = vide)
+    const MAX_HP = 10;
 
-    // init immédiate depuis l'état courant
-    const p = game.player;
-    if (p) this.hpText.setText(`HP: ${p.hp}/${p.maxHP}`);
+    const makeHpBar = (player, idx) => {
+      const isP2 = idx === 1;
+      const key  = isP2 ? 'life_bar1' : 'life_bar1';
+      const x    = isP2 ? (width - 12) : 12;
+      const y    = 10;
 
-    // puis écoute les mises à jour
-    game.events.on('player:hp', (hp, max) => this.hpText.setText(`HP: ${hp}/${max}`), this);
+      const img = this.add.image(x, y, key, 0)
+        .setOrigin(isP2 ? 1 : 0, 0)
+        .setScrollFactor(0)
+        .setDepth(1000)
+        .setScale(0.9);
 
-    this.events.on('shutdown', () => {
-      game.events.off('player:hp', null, this);
+      const update = (hp, max = MAX_HP) => {
+        const clamped = Phaser.Math.Clamp(hp ?? 0, 0, max);
+        const frameIndex = max - clamped; // 0 = plein, max = vide
+        img.setFrame(frameIndex);
+      };
+
+      update(player?.hp ?? MAX_HP, player?.maxHP ?? MAX_HP);
+      return { player, img, update, isP2 };
+    };
+
+    this.hpBars = (this.players.length ? this.players : [null]).map((p, i) => makeHpBar(p, i));
+
+    // Reposition sur resize
+    this.scale.on('resize', (sz) => {
+      const w = sz.width;
+      this.hpBars?.forEach(b => {
+        b.img.setX(b.isP2 ? (w - 12) : 12);
+      });
+      this.invText?.setPosition(12, 10 + this.hpBars.length * 36 + 4);
+      this.p2Tag?.setPosition(w - 8, 8);
     });
+
+    // ---- MISE À JOUR HP depuis la scène parente
+    if (this.parent?.events) {
+      const onHp = (arg1, arg2, arg3) => {
+        // Supporte deux signatures :
+        //  1) (player, hp, max)
+        //  2) (hp, max) quand il n'y a qu'un joueur
+        if (arg1 && typeof arg1 === 'object' && 'hp' in arg1) {
+          const pl  = arg1;
+          const hp  = arg2 ?? pl.hp;
+          const max = arg3 ?? pl.maxHP ?? MAX_HP;
+          this.hpBars.find(b => b.player === pl)?.update(hp, max);
+        } else {
+          const hp  = arg1;
+          const max = arg2 ?? MAX_HP;
+          this.hpBars[0]?.update(hp, max);
+        }
+      };
+      this.parent.events.on('player:hp', onHp, this);
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+        this.parent?.events?.off('player:hp', onHp, this);
+      });
     }
-    
+
+    // ---- INVENTAIRE (texte compact)
+    const baseStyle = { fontSize: '12px', backgroundColor: '#000', padding: { x: 6, y: 4 } };
+    const invY = 10 + this.hpBars.length * 36 + 4;
+
+    this.invText = this.add.text(12, invY, 'Fragments: 0\nKeys: 0', baseStyle)
+      .setScrollFactor(0)
+      .setDepth(1000);
+
+    const renderInv = () => {
+      const frag = this.inventory?.get?.('doorFragment') ?? 0;
+      const keys = (this.inventory?.get?.('chestKey') ?? 0) + (this.inventory?.get?.('key') ?? 0);
+      this.invText.setText(`Fragments: ${frag}\nKeys: ${keys}`);
+    };
+
+    if (this.inventory?.on) {
+      this.inventory.on('inv:update', renderInv);
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+        this.inventory?.off?.('inv:update', renderInv);
+      });
+    }
+    renderInv();
+
+    // Tag 2P si multi
+    if (this.players.length > 1) {
+      this.p2Tag = this.add.text(width - 8, 8, '2P', baseStyle)
+        .setOrigin(1, 0)
+        .setScrollFactor(0)
+        .setDepth(1000);
+    }
+  }
 }
